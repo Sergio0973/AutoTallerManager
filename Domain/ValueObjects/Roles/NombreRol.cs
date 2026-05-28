@@ -1,0 +1,26 @@
+namespace Domain.ValueObjects.Roles;
+
+public sealed record NombreRol
+{
+    public string Value { get; }
+
+    private NombreRol(string value)
+    {
+        Value = value;
+    }
+
+    public static NombreRol Create(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("El nombre del rol es obligatorio.", nameof(value));
+
+        var normalized = value.Trim();
+
+        if (normalized.Length > 50)
+            throw new ArgumentException("El nombre del rol no puede exceder los 50 caracteres.", nameof(value));
+
+        return new NombreRol(normalized);
+    }
+
+    public override string ToString() => Value;
+}
