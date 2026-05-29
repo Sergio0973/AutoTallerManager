@@ -3,17 +3,20 @@ using System;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Infrastructure.Data.Migrations._Probe
+namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AutoTallerDbContext))]
-    partial class AutoTallerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529113256_AddInventoryPurchaseConfigurations")]
+    partial class AddInventoryPurchaseConfigurations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -500,23 +503,17 @@ namespace Infrastructure.Data.Migrations._Probe
 
                     b.Property<string>("Condiciones")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("Condiciones");
+                        .HasColumnType("text");
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("Estado");
+                        .HasColumnType("text");
 
                     b.Property<DateOnly>("FechaInicio")
-                        .HasColumnType("date")
-                        .HasColumnName("FechaInicio");
+                        .HasColumnType("date");
 
                     b.Property<DateOnly>("FechaVencimiento")
-                        .HasColumnType("date")
-                        .HasColumnName("FechaVencimiento");
+                        .HasColumnType("date");
 
                     b.Property<int>("MecanicoId")
                         .HasColumnType("integer");
@@ -529,15 +526,13 @@ namespace Infrastructure.Data.Migrations._Probe
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FechaVencimiento");
-
                     b.HasIndex("MecanicoId");
 
                     b.HasIndex("OrdenId");
 
                     b.HasIndex("TipoServicioId");
 
-                    b.ToTable("Garantias", (string)null);
+                    b.ToTable("Garantias");
                 });
 
             modelBuilder.Entity("Domain.Entities.HistorialEstadoOrden", b =>
@@ -586,27 +581,23 @@ namespace Infrastructure.Data.Migrations._Probe
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateOnly>("Fecha")
-                        .HasColumnType("date")
-                        .HasColumnName("Fecha");
+                        .HasColumnType("date");
 
                     b.Property<string>("Fuente")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("Fuente");
+                        .HasColumnType("text");
 
                     b.Property<int>("Kilometraje")
-                        .HasColumnType("integer")
-                        .HasColumnName("Kilometraje");
+                        .HasColumnType("integer");
 
                     b.Property<int>("VehiculoId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("VehiculoId", "Fecha");
+                    b.HasIndex("VehiculoId");
 
-                    b.ToTable("HistorialesKilometraje", (string)null);
+                    b.ToTable("HistorialesKilometraje");
                 });
 
             modelBuilder.Entity("Domain.Entities.LogInventario", b =>
@@ -880,40 +871,30 @@ namespace Infrastructure.Data.Migrations._Probe
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("Estado");
+                        .HasColumnType("text");
 
                     b.Property<int>("FacturaId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("FechaPago")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("FechaPago");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("MetodoPagoId")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Monto")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("Monto");
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Referencia")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("Referencia");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("FacturaId");
 
-                    b.HasIndex("FechaPago");
-
                     b.HasIndex("MetodoPagoId");
 
-                    b.HasIndex("Referencia");
-
-                    b.ToTable("Pagos", (string)null);
+                    b.ToTable("Pagos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Pais", b =>
@@ -1597,13 +1578,13 @@ namespace Infrastructure.Data.Migrations._Probe
                     b.HasOne("Domain.Entities.OrdenServicio", "Orden")
                         .WithMany("Garantias")
                         .HasForeignKey("OrdenId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.TipoServicio", "TipoServicio")
                         .WithMany("Garantias")
                         .HasForeignKey("TipoServicioId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Mecanico");
@@ -1645,7 +1626,7 @@ namespace Infrastructure.Data.Migrations._Probe
                     b.HasOne("Domain.Entities.Vehiculo", "Vehiculo")
                         .WithMany("HistorialKilometrajes")
                         .HasForeignKey("VehiculoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Vehiculo");
@@ -1820,7 +1801,7 @@ namespace Infrastructure.Data.Migrations._Probe
                     b.HasOne("Domain.Entities.MetodoPago", "MetodoPago")
                         .WithMany("Pagos")
                         .HasForeignKey("MetodoPagoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Factura");
