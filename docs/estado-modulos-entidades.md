@@ -16,41 +16,41 @@ Convenciones actuales:
 
 | Entidad | DbSet | Configuration | Repository | UseCases | API |
 |---|---:|---:|---:|---:|---:|
-| Auditoria | Si | Si | No | No | No |
-| CategoriaRepuesto | Si | Si | No | No | No |
-| Cita | Si | Si | No | No | No |
-| Ciudad | Si | Si | No | No | No |
+| Auditoria | Si | Si | Si | Si | Si |
+| CategoriaRepuesto | Si | Si | Si | Si | Si |
+| Cita | Si | Si | Si | Si | Si |
+| Ciudad | Si | Si | Si | Si | Si |
 | Cliente | Si | Si | Si | Si | Si |
-| ClienteCorreo | Si | Si | No | No | No |
-| ClienteDireccion | Si | Si | No | No | No |
-| ClienteTelefono | Si | Si | No | No | No |
-| Compra | Si | Si | No | No | No |
-| Departamento | Si | Si | No | No | No |
-| DetalleCompra | Si | Si | No | No | No |
-| DetalleOrden | Si | Si | No | No | No |
-| EstadoFactura | Si | Si | No | No | No |
-| EstadoOrden | Si | Si | No | No | No |
+| ClienteCorreo | Si | Si | Si | Si | Si |
+| ClienteDireccion | Si | Si | Si | Si | Si |
+| ClienteTelefono | Si | Si | Si | Si | Si |
+| Compra | Si | Si | Si | Si | Si |
+| Departamento | Si | Si | Si | Si | Si |
+| DetalleCompra | Si | Si | Si | Si | Si |
+| DetalleOrden | Si | Si | Si | Si | Si |
+| EstadoFactura | Si | Si | Si | Si | Si |
+| EstadoOrden | Si | Si | Si | Si | Si |
 | Factura | Si | Si | Si | Si | Si |
-| Garantia | Si | Si | No | No | No |
-| HistorialEstadoOrden | Si | Si | No | No | No |
-| HistorialKilometraje | Si | Si | No | No | No |
-| LogInventario | Si | Si | No | No | No |
-| MarcaVehiculo | Si | Si | No | No | No |
-| MetodoPago | Si | Si | No | No | No |
-| ModeloVehiculo | Si | Si | No | No | No |
-| NotaOrden | Si | Si | No | No | No |
-| OrdenMecanico | Si | Si | No | No | No |
+| Garantia | Si | Si | Si | Si | Si |
+| HistorialEstadoOrden | Si | Si | Si | Si | Si |
+| HistorialKilometraje | Si | Si | Si | Si | Si |
+| LogInventario | Si | Si | Si | No | Si |
+| MarcaVehiculo | Si | Si | Si | Si | Si |
+| MetodoPago | Si | Si | Si | Si | Si |
+| ModeloVehiculo | Si | Si | Si | Si | Si |
+| NotaOrden | Si | Si | Si | Si | Si |
+| OrdenMecanico | Si | Si | Si | Si | Si |
 | OrdenServicio | Si | Si | Si | Si | Si |
-| OrdenTipoServicio | Si | Si | No | No | No |
-| Pago | Si | Si | No | No | No |
-| Pais | Si | Si | No | No | No |
-| Proveedor | Si | Si | No | No | No |
+| OrdenTipoServicio | Si | Si | Si | Si | Si |
+| Pago | Si | Si | Si | Si | Si |
+| Pais | Si | Si | Si | Si | Si |
+| Proveedor | Si | Si | Si | Si | Si |
 | Repuesto | Si | Si | Si | Si | Si |
-| RepuestoProveedor | Si | Si | No | No | No |
-| Rol | Si | Si | No | No | No |
-| TareaMecanico | Si | Si | No | No | No |
-| TipoServicio | Si | Si | No | No | No |
-| UnidadMedida | Si | Si | No | No | No |
+| RepuestoProveedor | Si | Si | Si | Si | Si |
+| Rol | Si | Si | Si | Si | Si |
+| TareaMecanico | Si | Si | Si | Si | Si |
+| TipoServicio | Si | Si | Si | Si | Si |
+| UnidadMedida | Si | Si | Si | Si | Si |
 | Usuario | Si | Si | Si | Si | Si |
 | Vehiculo | Si | Si | Si | Si | Si |
 
@@ -66,40 +66,41 @@ Los modulos con estructura completa basica son:
 - `Repuesto`
 - `Factura`
 - `Usuario`
-
-Las entidades con configuracion EF pero sin modulo de aplicacion/API son:
-
-- `Auditoria`
+- `Rol`
+- `EstadoOrden`
+- `EstadoFactura`
+- `MetodoPago`
+- `UnidadMedida`
 - `CategoriaRepuesto`
-- `Cita`
+- `TipoServicio`
+- `Pais`
+- `Departamento`
 - `Ciudad`
+- `MarcaVehiculo`
+- `ModeloVehiculo`
 - `ClienteCorreo`
 - `ClienteDireccion`
 - `ClienteTelefono`
-- `Compra`
-- `Departamento`
-- `DetalleCompra`
-- `DetalleOrden`
-- `EstadoFactura`
-- `EstadoOrden`
-- `Garantia`
-- `HistorialEstadoOrden`
-- `HistorialKilometraje`
-- `LogInventario`
-- `MarcaVehiculo`
-- `MetodoPago`
-- `ModeloVehiculo`
-- `NotaOrden`
-- `OrdenMecanico`
-- `OrdenTipoServicio`
-- `Pago`
-- `Pais`
+- `Cita`
 - `Proveedor`
 - `RepuestoProveedor`
-- `Rol`
+- `Compra`
+- `DetalleCompra`
+- `LogInventario`
+- `Pago`
+- `Garantia`
+- `HistorialKilometraje`
+- `OrdenMecanico`
+- `OrdenTipoServicio`
+- `DetalleOrden`
 - `TareaMecanico`
-- `TipoServicio`
-- `UnidadMedida`
+- `NotaOrden`
+- `HistorialEstadoOrden`
+- `Auditoria`
+
+Las entidades con configuracion EF pero sin modulo de aplicacion/API son:
+
+- Ninguna.
 
 Las entidades sin configuracion EF especifica todavia son:
 

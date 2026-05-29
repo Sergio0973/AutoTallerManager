@@ -50,4 +50,29 @@ public sealed class Repuesto : BaseEntity<int>
     {
         Activo = activo;
     }
+
+    public void AumentarStock(int cantidad)
+    {
+        if (cantidad <= 0)
+        {
+            throw new ArgumentException("La cantidad a aumentar debe ser mayor a cero.", nameof(cantidad));
+        }
+
+        StockActual += cantidad;
+    }
+
+    public void DisminuirStock(int cantidad)
+    {
+        if (cantidad <= 0)
+        {
+            throw new ArgumentException("La cantidad a disminuir debe ser mayor a cero.", nameof(cantidad));
+        }
+
+        if (StockActual < cantidad)
+        {
+            throw new InvalidOperationException("No hay stock suficiente para realizar el movimiento.");
+        }
+
+        StockActual -= cantidad;
+    }
 }
