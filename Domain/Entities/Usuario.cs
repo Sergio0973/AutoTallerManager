@@ -8,6 +8,7 @@ public sealed class Usuario : BaseEntity<int>
     public int RolId { get; private set; }
     public CorreoUsuario Correo { get; private set; } = default!;
     public NombreUsuario Nombre { get; private set; } = default!;
+    public string PasswordHash { get; private set; } = default!;
     public bool Activo { get; private set; }
     public DateTime FechaCreacion { get; private set; }
 
@@ -26,11 +27,12 @@ public sealed class Usuario : BaseEntity<int>
 
     private Usuario() { }
 
-    public Usuario(int rolId, CorreoUsuario correo, NombreUsuario nombre)
+    public Usuario(int rolId, CorreoUsuario correo, NombreUsuario nombre, string passwordHash)
     {
         RolId = rolId;
         Correo = correo;
         Nombre = nombre;
+        PasswordHash = passwordHash;
         Activo = true;
         FechaCreacion = DateTime.UtcNow;
     }
@@ -45,5 +47,15 @@ public sealed class Usuario : BaseEntity<int>
     public void CambiarEstado(bool activo)
     {
         Activo = activo;
+    }
+
+    public void CambiarPassword(string passwordHash)
+    {
+        if (string.IsNullOrWhiteSpace(passwordHash))
+        {
+            throw new ArgumentException("El hash de la contrasena es obligatorio.", nameof(passwordHash));
+        }
+
+        PasswordHash = passwordHash;
     }
 }

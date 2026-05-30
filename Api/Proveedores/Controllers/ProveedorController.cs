@@ -3,10 +3,12 @@ using Api.Proveedores.Dtos;
 using Application.Abstractions;
 using Application.Proveedores.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Proveedores.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class ProveedorController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

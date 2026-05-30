@@ -4,10 +4,12 @@ using Application.Abstractions;
 using Application.Auditorias.UseCase;
 using Domain.ValueObjects.Auditorias;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Auditorias.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class AuditoriaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

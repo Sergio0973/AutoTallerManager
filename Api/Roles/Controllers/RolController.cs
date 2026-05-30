@@ -3,10 +3,12 @@ using Api.Roles.Dtos;
 using Application.Abstractions;
 using Application.Roles.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Roles.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class RolController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -33,6 +35,7 @@ public sealed class RolController : BaseApiController
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateRolRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateRol(request.Nombre, request.Descripcion), cancellationToken);

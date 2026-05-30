@@ -3,10 +3,12 @@ using Api.Usuarios.Dtos;
 using Application.Abstractions;
 using Application.Usuarios.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Usuarios.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class UsuarioController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -33,9 +35,10 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateUsuarioRequest request, CancellationToken cancellationToken)
     {
-        var id = await _sender.Send(new CreateUsuario(request.RolId, request.Correo, request.Nombre), cancellationToken);
+        var id = await _sender.Send(new CreateUsuario(request.RolId, request.Correo, request.Nombre, request.Contrasena), cancellationToken);
         var usuario = await _uow.Usuarios.GetByIdAsync(id, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id }, Map(usuario!));
     }

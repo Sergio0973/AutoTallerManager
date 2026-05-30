@@ -3,10 +3,12 @@ using Api.EstadosFactura.Dtos;
 using Application.Abstractions;
 using Application.EstadosFactura.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.EstadosFactura.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class EstadoFacturaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

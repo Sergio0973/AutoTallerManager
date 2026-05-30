@@ -3,10 +3,12 @@ using Api.UnidadesMedida.Dtos;
 using Application.Abstractions;
 using Application.UnidadesMedida.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.UnidadesMedida.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class UnidadMedidaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

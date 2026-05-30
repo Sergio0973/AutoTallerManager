@@ -3,10 +3,12 @@ using Api.Common.Controllers;
 using Application.Abstractions;
 using Application.CategoriasRepuesto.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.CategoriasRepuesto.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class CategoriaRepuestoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

@@ -3,10 +3,12 @@ using Api.Compras.Dtos;
 using Application.Abstractions;
 using Application.Compras.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Compras.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class CompraController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

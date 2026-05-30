@@ -22,7 +22,9 @@ public sealed class UsuarioRepository : IUsuarioRepository
 
     public async Task<Usuario?> GetByCorreoAsync(CorreoUsuario correo, CancellationToken ct = default)
     {
-        return await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == correo, ct);
+        return await _context.Usuarios
+            .Include(u => u.Rol)
+            .FirstOrDefaultAsync(u => u.Correo == correo, ct);
     }
 
     public async Task<IReadOnlyList<Usuario>> GetAllAsync(CancellationToken ct = default)

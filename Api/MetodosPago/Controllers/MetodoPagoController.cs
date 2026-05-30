@@ -3,10 +3,12 @@ using Api.MetodosPago.Dtos;
 using Application.Abstractions;
 using Application.MetodosPago.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.MetodosPago.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class MetodoPagoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

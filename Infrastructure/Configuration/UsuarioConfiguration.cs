@@ -28,6 +28,11 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .HasMaxLength(100)
             .IsRequired();
 
+        builder.Property(u => u.PasswordHash)
+            .HasColumnName("PasswordHash")
+            .HasMaxLength(300)
+            .IsRequired();
+
         builder.Property(u => u.Activo).IsRequired();
         builder.Property(u => u.FechaCreacion).IsRequired();
 

@@ -1,10 +1,12 @@
 using Api.Common.Controllers;
 using Api.LogsInventario.Dtos;
 using Application.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.LogsInventario.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class LogInventarioController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

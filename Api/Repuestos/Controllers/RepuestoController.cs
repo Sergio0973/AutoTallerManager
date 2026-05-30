@@ -3,10 +3,12 @@ using Api.Repuestos.Dtos;
 using Application.Abstractions;
 using Application.Repuestos.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Repuestos.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class RepuestoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

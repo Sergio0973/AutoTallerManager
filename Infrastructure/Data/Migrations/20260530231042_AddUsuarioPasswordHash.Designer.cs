@@ -3,17 +3,20 @@ using System;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Infrastructure.Data.Migrations._Probe
+namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AutoTallerDbContext))]
-    partial class AutoTallerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530231042_AddUsuarioPasswordHash")]
+    partial class AddUsuarioPasswordHash
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

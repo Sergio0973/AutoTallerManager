@@ -3,10 +3,12 @@ using Api.DetalleCompras.Dtos;
 using Application.Abstractions;
 using Application.DetalleCompras.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.DetalleCompras.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class DetalleCompraController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

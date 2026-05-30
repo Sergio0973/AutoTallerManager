@@ -46,7 +46,8 @@ POST /api/Usuario
 {
   "rolId": 4,
   "correo": "recepcionista@autotaller.com",
-  "nombre": "Recepcionista Principal"
+  "nombre": "Recepcionista Principal",
+  "contrasena": "Recepcionista123!"
 }
 ```
 
@@ -77,7 +78,8 @@ POST /api/Usuario
 {
   "rolId": 5,
   "correo": "mecanico@autotaller.com",
-  "nombre": "Mecanico Principal"
+  "nombre": "Mecanico Principal",
+  "contrasena": "Mecanico123!"
 }
 ```
 
@@ -89,11 +91,94 @@ Validacion probada con `rolId` inexistente:
 {
   "rolId": 9999,
   "correo": "prueba@correo.com",
-  "nombre": "Usuario Prueba"
+  "nombre": "Usuario Prueba",
+  "contrasena": "Usuario123!"
 }
 ```
 
 Resultado probado: `404 Not Found`.
+
+### Login JWT
+
+```http
+POST /api/Auth/login
+```
+
+```json
+{
+  "correo": "recepcionista@autotaller.com",
+  "contrasena": "Recepcionista123!"
+}
+```
+
+Resultado esperado: `200 OK` con:
+
+- `token`
+- `expiraEn`
+- datos del usuario autenticado
+
+En Swagger, usar el boton `Authorize` y pegar:
+
+```text
+Bearer {token}
+```
+
+Notas:
+
+- Los usuarios creados antes de agregar `PasswordHash` quedan sin contrasena y no pueden iniciar sesion.
+- Para probar login, crear un usuario nuevo enviando `contrasena`.
+
+### Autorizacion por roles
+
+Primera tanda protegida con politica `Admin`:
+
+- `Usuario`: protegido, excepto `POST /api/Usuario` temporalmente publico para bootstrap.
+- `Rol`: protegido, excepto `POST /api/Rol` temporalmente publico para bootstrap.
+- `Auditoria`
+- `Repuesto`
+- `CategoriaRepuesto`
+- `UnidadMedida`
+- `Compra`
+- `DetalleCompra`
+- `Proveedor`
+- `RepuestoProveedor`
+- `LogInventario`
+- `EstadoFactura`
+- `MetodoPago`
+
+Prueba recomendada:
+
+1. Sin token, ejecutar `GET /api/Usuario`: debe responder `401 Unauthorized`.
+2. Con token de `Recepcionista`, ejecutar `GET /api/Usuario`: debe responder `403 Forbidden`.
+3. Crear rol `Admin` si no existe:
+
+```http
+POST /api/Rol
+```
+
+```json
+{
+  "nombre": "Admin",
+  "descripcion": "Acceso total al sistema"
+}
+```
+
+4. Crear usuario admin con el `id` real del rol `Admin`:
+
+```http
+POST /api/Usuario
+```
+
+```json
+{
+  "rolId": 6,
+  "correo": "admin@autotaller.com",
+  "nombre": "Administrador Principal",
+  "contrasena": "Admin123!"
+}
+```
+
+5. Iniciar sesion con `POST /api/Auth/login`, autorizar Swagger con `Bearer {token}` y repetir `GET /api/Usuario`: debe responder `200 OK`.
 
 ## 2. Cliente y vehiculo
 
