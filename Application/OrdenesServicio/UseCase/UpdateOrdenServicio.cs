@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.ValueObjects.OrdenServicios;
 using FluentValidation;
 using MediatR;
@@ -45,8 +46,16 @@ public sealed class UpdateOrdenServicioHandler : IRequestHandler<UpdateOrdenServ
         _ = await _uow.Vehiculos.GetByIdAsync(request.VehiculoId, cancellationToken)
             ?? throw new KeyNotFoundException("Vehiculo no encontrado.");
 
-        _ = await _uow.Usuarios.GetByIdAsync(request.RecepcionistaId, cancellationToken)
-            ?? throw new KeyNotFoundException("Usuario recepcionista no encontrado.");
+        await UserRoleGuard.EnsureRecepcionistaAsync(_uow, request.RecepcionistaId, cancellationToken);
+
+        _ = await _uow.EstadosOrden.GetByIdAsync(request.EstadoId, cancellationToken)
+            ?? throw new KeyNotFoundException("Estado de orden no encontrado.");
+
+        if (request.CitaId.HasValue)
+        {
+            _ = await _uow.Citas.GetByIdAsync(request.CitaId.Value, cancellationToken)
+                ?? throw new KeyNotFoundException("Cita no encontrada.");
+        }
 
         orden.Update(
             request.VehiculoId,

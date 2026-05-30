@@ -40,6 +40,12 @@ public sealed class CreateRepuestoHandler : IRequestHandler<CreateRepuesto, int>
 
     public async Task<int> Handle(CreateRepuesto request, CancellationToken cancellationToken)
     {
+        _ = await _uow.CategoriasRepuesto.GetByIdAsync(request.CategoriaId, cancellationToken)
+            ?? throw new KeyNotFoundException("Categoria de repuesto no encontrada.");
+
+        _ = await _uow.UnidadesMedida.GetByIdAsync(request.UnidadId, cancellationToken)
+            ?? throw new KeyNotFoundException("Unidad de medida no encontrada.");
+
         var codigo = CodigoRepuesto.Create(request.Codigo);
         if (await _uow.Repuestos.ExistsCodigoAsync(codigo, cancellationToken))
         {

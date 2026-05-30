@@ -32,6 +32,9 @@ public sealed class UpdateUsuarioHandler : IRequestHandler<UpdateUsuario>
         var usuario = await _uow.Usuarios.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
+        _ = await _uow.Roles.GetByIdAsync(request.RolId, cancellationToken)
+            ?? throw new KeyNotFoundException("Rol no encontrado.");
+
         var correo = CorreoUsuario.Create(request.Correo);
         var existente = await _uow.Usuarios.GetByCorreoAsync(correo, cancellationToken);
         if (existente is not null && existente.Id != request.Id)

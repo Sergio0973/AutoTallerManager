@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.ValueObjects.Citas;
 using FluentValidation;
 using MediatR;
@@ -44,8 +45,7 @@ public sealed class UpdateCitaHandler : IRequestHandler<UpdateCita>
         _ = await _uow.Vehiculos.GetByIdAsync(request.VehiculoId, cancellationToken)
             ?? throw new KeyNotFoundException("Vehiculo no encontrado.");
 
-        _ = await _uow.Usuarios.GetByIdAsync(request.RecepcionistaId, cancellationToken)
-            ?? throw new KeyNotFoundException("Recepcionista no encontrado.");
+        await UserRoleGuard.EnsureRecepcionistaAsync(_uow, request.RecepcionistaId, cancellationToken);
 
         _ = await _uow.TiposServicio.GetByIdAsync(request.TipoServicioId, cancellationToken)
             ?? throw new KeyNotFoundException("Tipo de servicio no encontrado.");

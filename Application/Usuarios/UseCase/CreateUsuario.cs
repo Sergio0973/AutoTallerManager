@@ -29,6 +29,9 @@ public sealed class CreateUsuarioHandler : IRequestHandler<CreateUsuario, int>
 
     public async Task<int> Handle(CreateUsuario request, CancellationToken cancellationToken)
     {
+        _ = await _uow.Roles.GetByIdAsync(request.RolId, cancellationToken)
+            ?? throw new KeyNotFoundException("Rol no encontrado.");
+
         var correo = CorreoUsuario.Create(request.Correo);
         if (await _uow.Usuarios.ExistsCorreoAsync(correo, cancellationToken))
         {

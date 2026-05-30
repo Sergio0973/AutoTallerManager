@@ -38,6 +38,9 @@ public sealed class UpdateVehiculoHandler : IRequestHandler<UpdateVehiculo>
         _ = await _uow.Clientes.GetByIdAsync(request.ClienteId, cancellationToken)
             ?? throw new KeyNotFoundException("Cliente no encontrado.");
 
+        _ = await _uow.ModelosVehiculo.GetByIdAsync(request.ModeloId, cancellationToken)
+            ?? throw new KeyNotFoundException("Modelo de vehiculo no encontrado.");
+
         var vin = Vin.Create(request.Vin);
         var existentePorVin = await _uow.Vehiculos.GetByVinAsync(vin, cancellationToken);
         if (existentePorVin is not null && existentePorVin.Id != request.Id)

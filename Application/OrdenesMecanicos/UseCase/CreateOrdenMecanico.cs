@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -27,8 +28,7 @@ public sealed class CreateOrdenMecanicoHandler : IRequestHandler<CreateOrdenMeca
         _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
 
-        _ = await _uow.Usuarios.GetByIdAsync(request.MecanicoId, cancellationToken)
-            ?? throw new KeyNotFoundException("Mecanico no encontrado.");
+        await UserRoleGuard.EnsureMecanicoAsync(_uow, request.MecanicoId, cancellationToken);
 
         if (await _uow.OrdenesMecanicos.GetByOrdenAndMecanicoAsync(request.OrdenId, request.MecanicoId, cancellationToken) is not null)
         {

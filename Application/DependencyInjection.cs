@@ -1,4 +1,6 @@
 using Application.Common.Validators;
+using Application.Abstractions;
+using Application.Common.Auditing;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +16,7 @@ public static class DependencyInjection
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(applicationAssembly));
         services.AddValidatorsFromAssembly(applicationAssembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddScoped<IAuditoriaService, AuditoriaService>();
 
         return services;
     }

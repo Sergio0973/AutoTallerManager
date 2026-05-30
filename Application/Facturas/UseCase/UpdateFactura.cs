@@ -45,6 +45,9 @@ public sealed class UpdateFacturaHandler : IRequestHandler<UpdateFactura>
         var factura = await _uow.Facturas.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new KeyNotFoundException("Factura no encontrada.");
 
+        _ = await _uow.EstadosFactura.GetByIdAsync(request.EstadoFacturaId, cancellationToken)
+            ?? throw new KeyNotFoundException("Estado de factura no encontrado.");
+
         factura.Update(
             request.EstadoFacturaId,
             ValoresFactura.Create(

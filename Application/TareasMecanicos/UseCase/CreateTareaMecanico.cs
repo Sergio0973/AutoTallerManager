@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.ValueObjects.TareaMecanicos;
 using FluentValidation;
@@ -45,8 +46,7 @@ public sealed class CreateTareaMecanicoHandler : IRequestHandler<CreateTareaMeca
         _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
 
-        _ = await _uow.Usuarios.GetByIdAsync(request.MecanicoId, cancellationToken)
-            ?? throw new KeyNotFoundException("Mecanico no encontrado.");
+        await UserRoleGuard.EnsureMecanicoAsync(_uow, request.MecanicoId, cancellationToken);
 
         _ = await _uow.TiposServicio.GetByIdAsync(request.TipoServicioId, cancellationToken)
             ?? throw new KeyNotFoundException("Tipo de servicio no encontrado.");

@@ -40,12 +40,8 @@ public sealed class FacturaController : BaseApiController
                 request.OrdenId,
                 request.EstadoFacturaId,
                 request.UsuarioId,
-                request.ManoDeObra,
-                request.CostoRepuestos,
                 request.Descuento,
                 request.ImpuestoPct,
-                request.Subtotal,
-                request.Total,
                 request.FechaEmision,
                 request.Observaciones),
             cancellationToken);

@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.ValueObjects.Garantias;
 using FluentValidation;
@@ -42,8 +43,7 @@ public sealed class CreateGarantiaHandler : IRequestHandler<CreateGarantia, int>
         _ = await _uow.TiposServicio.GetByIdAsync(request.TipoServicioId, cancellationToken)
             ?? throw new KeyNotFoundException("Tipo de servicio no encontrado.");
 
-        _ = await _uow.Usuarios.GetByIdAsync(request.MecanicoId, cancellationToken)
-            ?? throw new KeyNotFoundException("Mecanico no encontrado.");
+        await UserRoleGuard.EnsureMecanicoAsync(_uow, request.MecanicoId, cancellationToken);
 
         var garantia = new Garantia(
             request.OrdenId,

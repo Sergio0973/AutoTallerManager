@@ -44,6 +44,12 @@ public sealed class UpdateRepuestoHandler : IRequestHandler<UpdateRepuesto>
         var repuesto = await _uow.Repuestos.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new KeyNotFoundException("Repuesto no encontrado.");
 
+        _ = await _uow.CategoriasRepuesto.GetByIdAsync(request.CategoriaId, cancellationToken)
+            ?? throw new KeyNotFoundException("Categoria de repuesto no encontrada.");
+
+        _ = await _uow.UnidadesMedida.GetByIdAsync(request.UnidadId, cancellationToken)
+            ?? throw new KeyNotFoundException("Unidad de medida no encontrada.");
+
         var codigo = CodigoRepuesto.Create(request.Codigo);
         var existente = await _uow.Repuestos.GetByCodigoAsync(codigo, cancellationToken);
         if (existente is not null && existente.Id != request.Id)

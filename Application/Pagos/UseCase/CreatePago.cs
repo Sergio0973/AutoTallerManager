@@ -28,12 +28,17 @@ public sealed class CreatePagoValidator : AbstractValidator<CreatePago>
 public sealed class CreatePagoHandler : IRequestHandler<CreatePago, int>
 {
     private readonly IUnitOfWork _uow;
+    private readonly IAuditoriaService _auditoriaService;
 
-    public CreatePagoHandler(IUnitOfWork uow) => _uow = uow;
+    public CreatePagoHandler(IUnitOfWork uow, IAuditoriaService auditoriaService)
+    {
+        _uow = uow;
+        _auditoriaService = auditoriaService;
+    }
 
     public async Task<int> Handle(CreatePago request, CancellationToken cancellationToken)
     {
-        _ = await _uow.Facturas.GetByIdAsync(request.FacturaId, cancellationToken)
+        var factura = await _uow.Facturas.GetByIdAsync(request.FacturaId, cancellationToken)
             ?? throw new KeyNotFoundException("Factura no encontrada.");
 
         _ = await _uow.MetodosPago.GetByIdAsync(request.MetodoPagoId, cancellationToken)
@@ -48,6 +53,25 @@ public sealed class CreatePagoHandler : IRequestHandler<CreatePago, int>
 
         await _uow.Pagos.AddAsync(pago, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        await _auditoriaService.RegistrarAsync(
+            factura.UsuarioId,
+            "Pago",
+            pago.Id,
+            "CREAR",
+            null,
+            new
+            {
+                pago.Id,
+                pago.FacturaId,
+                pago.MetodoPagoId,
+                Monto = pago.Monto.Value,
+                pago.FechaPago,
+                Referencia = pago.Referencia?.Value,
+                Estado = pago.Estado.Value
+            },
+            cancellationToken);
+
         return pago.Id;
     }
 }

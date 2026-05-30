@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.Entities;
 using Domain.ValueObjects.OrdenServicios;
 using FluentValidation;
@@ -30,10 +31,12 @@ public sealed class CreateOrdenServicioValidator : AbstractValidator<CreateOrden
 public sealed class CreateOrdenServicioHandler : IRequestHandler<CreateOrdenServicio, int>
 {
     private readonly IUnitOfWork _uow;
+    private readonly IAuditoriaService _auditoriaService;
 
-    public CreateOrdenServicioHandler(IUnitOfWork uow)
+    public CreateOrdenServicioHandler(IUnitOfWork uow, IAuditoriaService auditoriaService)
     {
         _uow = uow;
+        _auditoriaService = auditoriaService;
     }
 
     public async Task<int> Handle(CreateOrdenServicio request, CancellationToken cancellationToken)
@@ -41,8 +44,16 @@ public sealed class CreateOrdenServicioHandler : IRequestHandler<CreateOrdenServ
         _ = await _uow.Vehiculos.GetByIdAsync(request.VehiculoId, cancellationToken)
             ?? throw new KeyNotFoundException("Vehiculo no encontrado.");
 
-        _ = await _uow.Usuarios.GetByIdAsync(request.RecepcionistaId, cancellationToken)
-            ?? throw new KeyNotFoundException("Usuario recepcionista no encontrado.");
+        await UserRoleGuard.EnsureRecepcionistaAsync(_uow, request.RecepcionistaId, cancellationToken);
+
+        _ = await _uow.EstadosOrden.GetByIdAsync(request.EstadoId, cancellationToken)
+            ?? throw new KeyNotFoundException("Estado de orden no encontrado.");
+
+        if (request.CitaId.HasValue)
+        {
+            _ = await _uow.Citas.GetByIdAsync(request.CitaId.Value, cancellationToken)
+                ?? throw new KeyNotFoundException("Cita no encontrada.");
+        }
 
         var orden = new OrdenServicio(
             request.VehiculoId,
@@ -56,6 +67,25 @@ public sealed class CreateOrdenServicioHandler : IRequestHandler<CreateOrdenServ
 
         await _uow.OrdenesServicio.AddAsync(orden, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        await _auditoriaService.RegistrarAsync(
+            request.RecepcionistaId,
+            "OrdenServicio",
+            orden.Id,
+            "CREAR",
+            null,
+            new
+            {
+                orden.Id,
+                orden.VehiculoId,
+                orden.RecepcionistaId,
+                orden.EstadoId,
+                orden.CitaId,
+                KilometrajeIngreso = orden.KilometrajeIngreso.Value,
+                orden.FechaIngreso,
+                orden.FechaEstimada
+            },
+            cancellationToken);
 
         return orden.Id;
     }
