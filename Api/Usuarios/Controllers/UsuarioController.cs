@@ -21,6 +21,9 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<UsuarioDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<UsuarioDto>>> GetAll(CancellationToken cancellationToken)
     {
         var usuarios = await _uow.Usuarios.GetAllAsync(cancellationToken);
@@ -28,6 +31,10 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(UsuarioDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UsuarioDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var usuario = await _uow.Usuarios.GetByIdAsync(id, cancellationToken);
@@ -35,6 +42,12 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(UsuarioDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateUsuarioRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateUsuario(request.RolId, request.Correo, request.Nombre, request.Contrasena), cancellationToken);
@@ -43,6 +56,12 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUsuarioRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateUsuario(id, request.RolId, request.Correo, request.Nombre), cancellationToken);
@@ -50,6 +69,11 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpPut("{id:int}/password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetUsuarioPasswordRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new ResetUsuarioPassword(id, request.NuevaContrasena), cancellationToken);
@@ -57,6 +81,11 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var usuario = await _uow.Usuarios.GetByIdAsync(id, cancellationToken);

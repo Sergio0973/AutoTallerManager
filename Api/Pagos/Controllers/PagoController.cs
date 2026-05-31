@@ -22,6 +22,10 @@ public sealed class PagoController : BaseApiController
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<PagoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<PagoDto>>> GetAll(
         [FromQuery] int? facturaId,
         [FromQuery] int? metodoPagoId,
@@ -51,6 +55,10 @@ public sealed class PagoController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(PagoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagoDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var pago = await _uow.Pagos.GetByIdAsync(id, cancellationToken);
@@ -58,6 +66,12 @@ public sealed class PagoController : BaseApiController
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(PagoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreatePagoRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(
@@ -74,6 +88,12 @@ public sealed class PagoController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdatePagoRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdatePago(id, request.Estado), cancellationToken);
@@ -81,6 +101,11 @@ public sealed class PagoController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var pago = await _uow.Pagos.GetByIdAsync(id, cancellationToken);

@@ -8,6 +8,24 @@ URL local:
 http://localhost:5258/swagger
 ```
 
+## Estado de migraciones
+
+Verificacion ejecutada:
+
+```bash
+dotnet build --no-restore
+dotnet ef migrations has-pending-model-changes -p .\Infrastructure -s .\Api
+```
+
+Resultado:
+
+```text
+Compilacion correcta.
+No changes have been made to the model since the last migration.
+```
+
+No se requiere crear una nueva migracion por los ultimos cambios, porque fueron reglas de aplicacion, documentacion Swagger y datos semilla.
+
 ## 1. Base de usuarios
 
 ### Rol

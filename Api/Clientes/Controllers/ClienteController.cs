@@ -22,6 +22,9 @@ public sealed class ClienteController : BaseApiController
 
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<ClienteDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<ClienteDto>>> GetAll(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
@@ -42,6 +45,8 @@ public sealed class ClienteController : BaseApiController
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ClienteDto>> GetById(int id, CancellationToken cancellationToken)
     {
@@ -51,6 +56,10 @@ public sealed class ClienteController : BaseApiController
 
     [HttpPost]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateClienteRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateCliente(request.Nombres, request.Apellidos, request.Documento), cancellationToken);
@@ -60,6 +69,11 @@ public sealed class ClienteController : BaseApiController
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateClienteRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateCliente(id, request.Nombres, request.Apellidos, request.Documento), cancellationToken);
@@ -68,7 +82,10 @@ public sealed class ClienteController : BaseApiController
 
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var cliente = await _uow.Clientes.GetByIdAsync(id, cancellationToken);

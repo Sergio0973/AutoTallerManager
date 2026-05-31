@@ -21,6 +21,10 @@ public sealed class VehiculoController : BaseApiController
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<VehiculoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<VehiculoDto>>> GetAll(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
@@ -43,6 +47,10 @@ public sealed class VehiculoController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(VehiculoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VehiculoDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var vehiculo = await _uow.Vehiculos.GetByIdAsync(id, cancellationToken);
@@ -50,6 +58,12 @@ public sealed class VehiculoController : BaseApiController
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(VehiculoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateVehiculoRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateVehiculo(request.ClienteId, request.ModeloId, request.Vin, request.Anio, request.Placa, request.Color), cancellationToken);
@@ -58,6 +72,12 @@ public sealed class VehiculoController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateVehiculoRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateVehiculo(id, request.ClienteId, request.ModeloId, request.Vin, request.Anio, request.Placa, request.Color), cancellationToken);
@@ -65,6 +85,11 @@ public sealed class VehiculoController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var vehiculo = await _uow.Vehiculos.GetByIdAsync(id, cancellationToken);

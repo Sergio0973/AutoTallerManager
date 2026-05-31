@@ -27,6 +27,9 @@ public sealed class AuthController : BaseApiController
     }
 
     [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         var usuario = await _uow.Usuarios.GetByCorreoAsync(CorreoUsuario.Create(request.Correo), cancellationToken);

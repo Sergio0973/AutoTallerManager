@@ -23,6 +23,11 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<OrdenServicioDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<IReadOnlyList<OrdenServicioDto>>> GetAll(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
@@ -70,6 +75,11 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(OrdenServicioDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<OrdenServicioDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var orden = await _uow.OrdenesServicio.GetByIdAsync(id, cancellationToken);
@@ -77,6 +87,13 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(OrdenServicioDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Create([FromBody] CreateOrdenServicioRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(
@@ -96,6 +113,13 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateOrdenServicioRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(
@@ -115,6 +139,12 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var orden = await _uow.OrdenesServicio.GetByIdAsync(id, cancellationToken);
