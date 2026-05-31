@@ -38,4 +38,9 @@ public sealed class UnidadMedidaRepository : IUnidadMedidaRepository
         _context.UnidadesMedida.Remove(unidad);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Repuestos.AnyAsync(r => r.UnidadId == id, ct);
+    }
 }

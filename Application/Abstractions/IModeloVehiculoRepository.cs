@@ -12,4 +12,5 @@ public interface IModeloVehiculoRepository
     Task AddAsync(ModeloVehiculo modelo, CancellationToken ct = default);
     Task UpdateAsync(ModeloVehiculo modelo, CancellationToken ct = default);
     Task RemoveAsync(ModeloVehiculo modelo, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

@@ -58,6 +58,11 @@ public sealed class CategoriaRepuestoController : BaseApiController
             return NotFound();
         }
 
+        if (await _uow.CategoriasRepuesto.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar la categoria porque tiene repuestos asociados." });
+        }
+
         await _uow.CategoriasRepuesto.RemoveAsync(categoria, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return NoContent();

@@ -11,4 +11,5 @@ public interface IMarcaVehiculoRepository
     Task AddAsync(MarcaVehiculo marca, CancellationToken ct = default);
     Task UpdateAsync(MarcaVehiculo marca, CancellationToken ct = default);
     Task RemoveAsync(MarcaVehiculo marca, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

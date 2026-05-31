@@ -12,4 +12,5 @@ public interface ICompraRepository
     Task AddAsync(Compra compra, CancellationToken ct = default);
     Task UpdateAsync(Compra compra, CancellationToken ct = default);
     Task RemoveAsync(Compra compra, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

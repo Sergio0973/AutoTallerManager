@@ -58,6 +58,11 @@ public sealed class UnidadMedidaController : BaseApiController
             return NotFound();
         }
 
+        if (await _uow.UnidadesMedida.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar la unidad de medida porque tiene repuestos asociados." });
+        }
+
         await _uow.UnidadesMedida.RemoveAsync(unidad, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return NoContent();

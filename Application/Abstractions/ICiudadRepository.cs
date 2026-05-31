@@ -12,4 +12,5 @@ public interface ICiudadRepository
     Task AddAsync(Ciudad ciudad, CancellationToken ct = default);
     Task UpdateAsync(Ciudad ciudad, CancellationToken ct = default);
     Task RemoveAsync(Ciudad ciudad, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

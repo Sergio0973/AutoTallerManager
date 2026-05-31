@@ -3,10 +3,12 @@ using Api.Facturas.Dtos;
 using Application.Abstractions;
 using Application.Facturas.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Facturas.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class FacturaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -76,6 +78,11 @@ public sealed class FacturaController : BaseApiController
         if (factura is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Facturas.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar la factura porque tiene pagos asociados." });
         }
 
         await _uow.Facturas.RemoveAsync(factura, cancellationToken);

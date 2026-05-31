@@ -35,7 +35,6 @@ public sealed class UsuarioController : BaseApiController
     }
 
     [HttpPost]
-    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateUsuarioRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateUsuario(request.RolId, request.Correo, request.Nombre, request.Contrasena), cancellationToken);
@@ -57,6 +56,11 @@ public sealed class UsuarioController : BaseApiController
         if (usuario is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Usuarios.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el usuario porque tiene registros operativos o auditorias asociadas." });
         }
 
         await _uow.Usuarios.RemoveAsync(usuario, cancellationToken);

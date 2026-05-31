@@ -3,10 +3,12 @@ using Api.OrdenesMecanicos.Dtos;
 using Application.Abstractions;
 using Application.OrdenesMecanicos.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.OrdenesMecanicos.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class OrdenMecanicoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

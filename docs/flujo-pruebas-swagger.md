@@ -132,8 +132,8 @@ Notas:
 
 Primera tanda protegida con politica `Admin`:
 
-- `Usuario`: protegido, excepto `POST /api/Usuario` temporalmente publico para bootstrap.
-- `Rol`: protegido, excepto `POST /api/Rol` temporalmente publico para bootstrap.
+- `Usuario`
+- `Rol`
 - `Auditoria`
 - `Repuesto`
 - `CategoriaRepuesto`
@@ -150,7 +150,7 @@ Prueba recomendada:
 
 1. Sin token, ejecutar `GET /api/Usuario`: debe responder `401 Unauthorized`.
 2. Con token de `Recepcionista`, ejecutar `GET /api/Usuario`: debe responder `403 Forbidden`.
-3. Crear rol `Admin` si no existe:
+3. Crear rol `Admin` si no existe. Este paso solo funciona con token `Admin`; durante el bootstrap inicial se dejo temporalmente publico y luego se cerro:
 
 ```http
 POST /api/Rol
@@ -163,7 +163,7 @@ POST /api/Rol
 }
 ```
 
-4. Crear usuario admin con el `id` real del rol `Admin`:
+4. Crear usuario admin con el `id` real del rol `Admin`. Este paso solo funciona con token `Admin`; durante el bootstrap inicial se dejo temporalmente publico y luego se cerro:
 
 ```http
 POST /api/Usuario
@@ -179,6 +179,217 @@ POST /api/Usuario
 ```
 
 5. Iniciar sesion con `POST /api/Auth/login`, autorizar Swagger con `Bearer {token}` y repetir `GET /api/Usuario`: debe responder `200 OK`.
+
+Segunda tanda protegida con politica `Recepcionista` (`Recepcionista` o `Admin`):
+
+- `Cliente`
+- `ClienteCorreo`
+- `ClienteTelefono`
+- `ClienteDireccion`
+- `Vehiculo`
+- `HistorialKilometraje`
+- `Cita`
+- `OrdenServicio`
+
+Prueba recomendada:
+
+1. Sin token, ejecutar `GET /api/Cliente`: debe responder `401 Unauthorized`.
+2. Con token `Mecanico`, ejecutar `GET /api/Cliente`: debe responder `403 Forbidden`.
+3. Con token `Recepcionista`, ejecutar `GET /api/Cliente`: debe responder `200 OK`.
+4. Con token `Admin`, ejecutar `GET /api/Cliente`: debe responder `200 OK`.
+
+Tercera tanda protegida con politica `Mecanico` (`Mecanico` o `Admin`):
+
+- `OrdenMecanico`
+- `TareaMecanico`
+- `NotaOrden`
+- `HistorialEstadoOrden`
+- `DetalleOrden`
+- `Garantia`
+- `Factura`
+- `Pago`
+
+Prueba recomendada:
+
+1. Sin token, ejecutar `GET /api/TareaMecanico`: debe responder `401 Unauthorized`.
+2. Con token `Recepcionista`, ejecutar `GET /api/TareaMecanico`: debe responder `403 Forbidden`.
+3. Con token `Mecanico`, ejecutar `GET /api/TareaMecanico`: debe responder `200 OK`.
+4. Con token `Admin`, ejecutar `GET /api/TareaMecanico`: debe responder `200 OK`.
+
+Cuarta tanda de cierre:
+
+Catalogos/configuracion protegidos con politica `Admin`:
+
+- `Pais`
+- `Departamento`
+- `Ciudad`
+- `MarcaVehiculo`
+- `ModeloVehiculo`
+- `EstadoOrden`
+- `TipoServicio`
+
+Relacion de servicios de una orden protegida con politica `Recepcionista`:
+
+- `OrdenTipoServicio`
+
+Verificacion tecnica: no quedan controladores sin `[Authorize]` o `[AllowAnonymous]`, excepto controladores base comunes.
+
+Pruebas realizadas:
+
+- `GET /api/Pais` sin token: `401 Unauthorized`.
+- `GET /api/Pais` con token `Recepcionista`: `403 Forbidden`.
+- `GET /api/Pais` con token `Admin`: `200 OK`.
+- `GET /api/OrdenTipoServicio` con token `Recepcionista`: `200 OK`.
+
+Estado final del bloque JWT/autorizacion:
+
+- `POST /api/Auth/login`: publico.
+- `Admin`: usuarios, roles, auditoria, inventario y catalogos de configuracion.
+- `Recepcionista` o `Admin`: clientes, vehiculos, citas, ordenes de servicio y tipos de servicio asignados a orden.
+- `Mecanico` o `Admin`: asignaciones, tareas, notas, historial de estado, detalle de repuestos usados, garantias, facturas y pagos.
+
+## 8. Borrado seguro
+
+Primera tanda implementada:
+
+- `DELETE /api/Cliente/{id}` devuelve `409 Conflict` si el cliente tiene vehiculos, telefonos, correos o direcciones asociadas.
+- `DELETE /api/Vehiculo/{id}` devuelve `409 Conflict` si el vehiculo tiene citas, ordenes de servicio o historial de kilometraje asociado.
+- `DELETE /api/Rol/{id}` devuelve `409 Conflict` si el rol tiene usuarios asociados.
+- `DELETE /api/Repuesto/{id}` devuelve `409 Conflict` si el repuesto tiene compras, ordenes, proveedores o logs de inventario asociados.
+
+Prueba recomendada:
+
+- Con token `Admin`, intentar eliminar `Rol` con `id = 6`: debe responder `409 Conflict`.
+- Con token `Recepcionista`, intentar eliminar `Cliente` con `id = 2`: debe responder `409 Conflict`.
+- Con token `Recepcionista`, intentar eliminar `Vehiculo` con `id = 2`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `Repuesto` con `id = 2`: debe responder `409 Conflict`.
+
+Segunda tanda implementada:
+
+- `DELETE /api/Pais/{id}` devuelve `409 Conflict` si el pais tiene departamentos asociados.
+- `DELETE /api/Departamento/{id}` devuelve `409 Conflict` si el departamento tiene ciudades asociadas.
+- `DELETE /api/Ciudad/{id}` devuelve `409 Conflict` si la ciudad tiene proveedores o direcciones de cliente asociadas.
+- `DELETE /api/MarcaVehiculo/{id}` devuelve `409 Conflict` si la marca tiene modelos asociados.
+- `DELETE /api/ModeloVehiculo/{id}` devuelve `409 Conflict` si el modelo tiene vehiculos asociados.
+- `DELETE /api/EstadoOrden/{id}` devuelve `409 Conflict` si el estado tiene ordenes o historial asociado.
+- `DELETE /api/TipoServicio/{id}` devuelve `409 Conflict` si el tipo de servicio tiene citas, ordenes, tareas o garantias asociadas.
+- `DELETE /api/Proveedor/{id}` devuelve `409 Conflict` si el proveedor tiene compras o repuestos asociados.
+
+Prueba recomendada:
+
+- Con token `Admin`, intentar eliminar `Pais` con `id = 2`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `Ciudad` con `id = 2`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `MarcaVehiculo` con `id = 1`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `TipoServicio` con `id = 1`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `Proveedor` con `id = 2`: debe responder `409 Conflict`.
+
+Tercera tanda implementada:
+
+- `DELETE /api/OrdenServicio/{id}` devuelve `409 Conflict` si la orden tiene servicios, mecanicos, tareas, detalles, notas, historial, factura, garantia o logs asociados.
+- `DELETE /api/Compra/{id}` devuelve `409 Conflict` si la compra tiene detalles o logs de inventario asociados.
+- `DELETE /api/Factura/{id}` devuelve `409 Conflict` si la factura tiene pagos asociados.
+- `DELETE /api/Usuario/{id}` devuelve `409 Conflict` si el usuario tiene registros operativos o auditorias asociadas.
+- `DELETE /api/CategoriaRepuesto/{id}` devuelve `409 Conflict` si la categoria tiene repuestos asociados.
+- `DELETE /api/UnidadMedida/{id}` devuelve `409 Conflict` si la unidad tiene repuestos asociados.
+- `DELETE /api/EstadoFactura/{id}` devuelve `409 Conflict` si el estado tiene facturas asociadas.
+- `DELETE /api/MetodoPago/{id}` devuelve `409 Conflict` si el metodo tiene pagos asociados.
+
+Prueba recomendada:
+
+- Con token `Recepcionista`, intentar eliminar `OrdenServicio` con `id = 5`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `Compra` con `id = 2`: debe responder `409 Conflict`.
+- Con token `Mecanico`, intentar eliminar `Factura` con `id = 4`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `Usuario` con `id = 6`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `CategoriaRepuesto` con `id = 5`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `UnidadMedida` con `id = 4`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `EstadoFactura` con `id = 4`: debe responder `409 Conflict`.
+- Con token `Admin`, intentar eliminar `MetodoPago` con `id = 4`: debe responder `409 Conflict`.
+
+## 9. Reglas de negocio de pagos y facturas
+
+Reglas implementadas:
+
+- `PUT /api/Pago/{id}` devuelve `409 Conflict` si el pago actual esta en estado `Confirmado`.
+- `DELETE /api/Pago/{id}` devuelve `409 Conflict` si el pago esta en estado `Confirmado`.
+- `PUT /api/Factura/{id}` devuelve `409 Conflict` si la factura tiene pagos confirmados.
+
+Prueba recomendada:
+
+- Con token `Mecanico`, intentar modificar `Pago` con `id = 3`: debe responder `409 Conflict`.
+- Con token `Mecanico`, intentar eliminar `Pago` con `id = 3`: debe responder `409 Conflict`.
+- Con token `Mecanico`, intentar modificar `Factura` con `id = 4`: debe responder `409 Conflict`.
+
+Nota: los detalles de compra y de orden ya ajustan/revierten inventario dentro de transacciones y registran `LogInventario`. Si el reverso deja stock insuficiente, el dominio bloquea el movimiento.
+
+## 10. Auditoria automatica de actualizaciones
+
+Se registra `ACTUALIZAR` automaticamente en:
+
+- `PUT /api/OrdenServicio/{id}`
+- `PUT /api/Factura/{id}`
+- `PUT /api/Pago/{id}`
+
+Cada registro guarda:
+
+- `datosAnteriores`: snapshot antes del cambio.
+- `datosNuevos`: snapshot despues del cambio.
+- `ipOrigen`: `SYSTEM`.
+
+Prueba recomendada:
+
+- Actualizar una orden de servicio sin romper sus relaciones y consultar `GET /api/Auditoria?entidad=OrdenServicio`.
+- Actualizar una factura sin pagos confirmados y consultar `GET /api/Auditoria?entidad=Factura`.
+- Actualizar un pago no confirmado y consultar `GET /api/Auditoria?entidad=Pago`.
+
+## 11. Paginacion
+
+Implementado en listados principales:
+
+```http
+GET /api/Cliente?pageNumber=1&pageSize=20&search=Carlos
+GET /api/Vehiculo?pageNumber=1&pageSize=20
+GET /api/OrdenServicio?pageNumber=1&pageSize=20&estadoId=1
+GET /api/Repuesto?pageNumber=1&pageSize=20&categoriaId=5
+```
+
+Comportamiento:
+
+- `pageNumber` por defecto: `1`.
+- `pageSize` por defecto: `20`.
+- `search` filtra donde el repositorio tenga soporte de busqueda.
+- `estadoId` filtra ordenes de servicio por estado.
+- `categoriaId` filtra repuestos por categoria.
+- Responde header `X-Total-Count` con el total de registros que cumplen el filtro.
+- Si `pageNumber` o `pageSize` son menores o iguales a cero, responde `400 Bad Request`.
+
+Prueba recomendada:
+
+- Con token `Recepcionista`, ejecutar `GET /api/Cliente?pageNumber=1&pageSize=10`.
+- Verificar respuesta `200 OK`.
+- Revisar en response headers el valor `X-Total-Count`.
+- Repetir con `GET /api/Vehiculo?pageNumber=1&pageSize=10`.
+- Repetir con `GET /api/OrdenServicio?pageNumber=1&pageSize=10`.
+- Con token `Admin`, repetir con `GET /api/Repuesto?pageNumber=1&pageSize=10`.
+
+## 12. Rate limiting
+
+Implementado con el middleware nativo de ASP.NET Core:
+
+- `OrdenServicio`: maximo `60` solicitudes por minuto.
+- `Repuesto`: maximo `30` solicitudes por minuto.
+
+Endpoints afectados:
+
+- `/api/OrdenServicio`
+- `/api/Repuesto`
+
+Comportamiento esperado al exceder el limite:
+
+```text
+429 Too Many Requests
+```
+
+Nota: para probarlo manualmente desde Swagger hay que repetir muchas solicitudes en menos de un minuto. Es mas practico validarlo con una prueba automatizada o un script.
 
 ## 2. Cliente y vehiculo
 
@@ -790,6 +1001,12 @@ La auditoria se registra automaticamente al crear:
 - `Factura`
 - `Pago`
 
+Tambien se registra automaticamente al actualizar:
+
+- `OrdenServicio`
+- `Factura`
+- `Pago`
+
 Para verificarlo, despues de crear una orden, factura o pago, consultar:
 
 ```http
@@ -799,8 +1016,9 @@ GET /api/Auditoria
 Debe aparecer un registro con:
 
 - `entidad`: `OrdenServicio`, `Factura` o `Pago`.
-- `tipoAccion`: `CREAR`.
+- `tipoAccion`: `CREAR` o `ACTUALIZAR`.
 - `datosNuevos`: JSON con los datos principales del registro creado.
+- `datosAnteriores`: JSON con los datos anteriores en actualizaciones.
 - `ipOrigen`: `SYSTEM`.
 
 Tambien se puede crear una auditoria manual para pruebas:

@@ -38,4 +38,10 @@ public sealed class CiudadRepository : ICiudadRepository
         _context.Ciudades.Remove(ciudad);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Proveedores.AnyAsync(p => p.CiudadId == id, ct)
+            || await _context.ClienteDirecciones.AnyAsync(d => d.CiudadId == id, ct);
+    }
 }

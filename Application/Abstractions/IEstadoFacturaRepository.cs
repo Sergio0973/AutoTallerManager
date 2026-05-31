@@ -11,4 +11,5 @@ public interface IEstadoFacturaRepository
     Task AddAsync(EstadoFactura estado, CancellationToken ct = default);
     Task UpdateAsync(EstadoFactura estado, CancellationToken ct = default);
     Task RemoveAsync(EstadoFactura estado, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

@@ -3,10 +3,12 @@ using Api.ModelosVehiculo.Dtos;
 using Application.Abstractions;
 using Application.ModelosVehiculo.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.ModelosVehiculo.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class ModeloVehiculoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -63,6 +65,11 @@ public sealed class ModeloVehiculoController : BaseApiController
         if (modelo is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.ModelosVehiculo.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el modelo porque tiene vehiculos asociados." });
         }
 
         await _uow.ModelosVehiculo.RemoveAsync(modelo, cancellationToken);

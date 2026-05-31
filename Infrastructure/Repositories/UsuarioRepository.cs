@@ -69,4 +69,19 @@ public sealed class UsuarioRepository : IUsuarioRepository
     {
         return await _context.Usuarios.AnyAsync(u => u.Correo == correo, ct);
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Auditorias.AnyAsync(a => a.UsuarioId == id, ct)
+            || await _context.Citas.AnyAsync(c => c.RecepcionistaId == id, ct)
+            || await _context.OrdenesServicio.AnyAsync(o => o.RecepcionistaId == id, ct)
+            || await _context.Compras.AnyAsync(c => c.UsuarioId == id, ct)
+            || await _context.OrdenesMecanicos.AnyAsync(o => o.MecanicoId == id, ct)
+            || await _context.TareasMecanicos.AnyAsync(t => t.MecanicoId == id, ct)
+            || await _context.NotasOrden.AnyAsync(n => n.UsuarioId == id, ct)
+            || await _context.HistorialEstadosOrden.AnyAsync(h => h.UsuarioId == id, ct)
+            || await _context.LogsInventario.AnyAsync(l => l.UsuarioId == id, ct)
+            || await _context.Facturas.AnyAsync(f => f.UsuarioId == id, ct)
+            || await _context.Garantias.AnyAsync(g => g.MecanicoId == id, ct);
+    }
 }

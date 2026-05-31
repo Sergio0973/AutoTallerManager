@@ -3,10 +3,12 @@ using Api.Common.Controllers;
 using Application.Abstractions;
 using Application.ClienteCorreos.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.ClienteCorreos.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class ClienteCorreoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

@@ -38,4 +38,9 @@ public sealed class ModeloVehiculoRepository : IModeloVehiculoRepository
         _context.ModelosVehiculo.Remove(modelo);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Vehiculos.AnyAsync(v => v.ModeloId == id, ct);
+    }
 }

@@ -4,10 +4,12 @@ using Application.Abstractions;
 using Application.TareasMecanicos.UseCase;
 using Domain.ValueObjects.TareaMecanicos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.TareasMecanicos.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class TareaMecanicoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

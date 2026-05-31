@@ -3,10 +3,12 @@ using Api.DetalleOrdenes.Dtos;
 using Application.Abstractions;
 using Application.DetalleOrdenes.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.DetalleOrdenes.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class DetalleOrdenController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

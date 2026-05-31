@@ -58,6 +58,11 @@ public sealed class EstadoFacturaController : BaseApiController
             return NotFound();
         }
 
+        if (await _uow.EstadosFactura.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el estado de factura porque tiene facturas asociadas." });
+        }
+
         await _uow.EstadosFactura.RemoveAsync(estado, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return NoContent();

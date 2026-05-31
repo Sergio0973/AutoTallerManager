@@ -12,4 +12,5 @@ public interface IDepartamentoRepository
     Task AddAsync(Departamento departamento, CancellationToken ct = default);
     Task UpdateAsync(Departamento departamento, CancellationToken ct = default);
     Task RemoveAsync(Departamento departamento, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

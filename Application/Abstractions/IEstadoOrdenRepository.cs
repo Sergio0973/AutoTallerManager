@@ -11,4 +11,5 @@ public interface IEstadoOrdenRepository
     Task AddAsync(EstadoOrden estado, CancellationToken ct = default);
     Task UpdateAsync(EstadoOrden estado, CancellationToken ct = default);
     Task RemoveAsync(EstadoOrden estado, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

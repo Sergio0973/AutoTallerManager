@@ -35,4 +35,9 @@ public sealed class RolRepository : IRolRepository
         _context.Roles.Remove(rol);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasUsuariosAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Usuarios.AnyAsync(u => u.RolId == id, ct);
+    }
 }

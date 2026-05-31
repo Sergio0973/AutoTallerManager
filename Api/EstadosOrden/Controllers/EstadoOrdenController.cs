@@ -3,10 +3,12 @@ using Api.EstadosOrden.Dtos;
 using Application.Abstractions;
 using Application.EstadosOrden.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.EstadosOrden.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class EstadoOrdenController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -54,6 +56,11 @@ public sealed class EstadoOrdenController : BaseApiController
         if (estado is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.EstadosOrden.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el estado de orden porque tiene ordenes o historial asociado." });
         }
 
         await _uow.EstadosOrden.RemoveAsync(estado, cancellationToken);

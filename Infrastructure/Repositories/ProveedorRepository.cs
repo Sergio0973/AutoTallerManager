@@ -44,4 +44,10 @@ public sealed class ProveedorRepository : IProveedorRepository
         _context.Proveedores.Remove(proveedor);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Compras.AnyAsync(c => c.ProveedorId == id, ct)
+            || await _context.RepuestosProveedor.AnyAsync(r => r.ProveedorId == id, ct);
+    }
 }

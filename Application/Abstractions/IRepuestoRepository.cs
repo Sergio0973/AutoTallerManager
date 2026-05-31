@@ -15,4 +15,5 @@ public interface IRepuestoRepository
     Task UpdateAsync(Repuesto repuesto, CancellationToken ct = default);
     Task RemoveAsync(Repuesto repuesto, CancellationToken ct = default);
     Task<bool> ExistsCodigoAsync(CodigoRepuesto codigo, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

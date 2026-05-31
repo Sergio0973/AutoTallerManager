@@ -3,10 +3,12 @@ using Api.Vehiculos.Dtos;
 using Application.Abstractions;
 using Application.Vehiculos.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Vehiculos.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class VehiculoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -19,9 +21,21 @@ public sealed class VehiculoController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<VehiculoDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<VehiculoDto>>> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var vehiculos = await _uow.Vehiculos.GetAllAsync(cancellationToken);
+        if (pageNumber <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { message = "pageNumber y pageSize deben ser mayores a cero." });
+        }
+
+        var total = await _uow.Vehiculos.CountAsync(search, cancellationToken);
+        var vehiculos = await _uow.Vehiculos.GetPagedAsync(pageNumber, pageSize, search, cancellationToken);
+        Response.Headers["X-Total-Count"] = total.ToString();
+
         return Ok(vehiculos.Select(Map).ToList());
     }
 
@@ -54,6 +68,11 @@ public sealed class VehiculoController : BaseApiController
         if (vehiculo is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Vehiculos.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el vehiculo porque tiene citas, ordenes de servicio o historial de kilometraje asociado." });
         }
 
         await _uow.Vehiculos.RemoveAsync(vehiculo, cancellationToken);

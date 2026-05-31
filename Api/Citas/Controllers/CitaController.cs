@@ -3,10 +3,12 @@ using Api.Common.Controllers;
 using Application.Abstractions;
 using Application.Citas.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Citas.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class CitaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

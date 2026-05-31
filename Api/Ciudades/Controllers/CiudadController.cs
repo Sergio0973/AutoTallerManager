@@ -3,10 +3,12 @@ using Api.Common.Controllers;
 using Application.Abstractions;
 using Application.Ciudades.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Ciudades.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class CiudadController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -57,6 +59,11 @@ public sealed class CiudadController : BaseApiController
         if (ciudad is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Ciudades.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar la ciudad porque tiene proveedores o direcciones de cliente asociadas." });
         }
 
         await _uow.Ciudades.RemoveAsync(ciudad, cancellationToken);

@@ -27,6 +27,12 @@ public sealed class PagoRepository : IPagoRepository
     public async Task<IReadOnlyList<Pago>> GetByEstadoAsync(EstadoPago estado, CancellationToken ct = default) =>
         await _context.Pagos.Where(p => p.Estado == estado).OrderByDescending(p => p.FechaPago).ToListAsync(ct);
 
+    public async Task<bool> HasConfirmedByFacturaIdAsync(int facturaId, CancellationToken ct = default)
+    {
+        var confirmado = EstadoPago.Create("Confirmado");
+        return await _context.Pagos.AnyAsync(p => p.FacturaId == facturaId && p.Estado == confirmado, ct);
+    }
+
     public async Task AddAsync(Pago pago, CancellationToken ct = default) =>
         await _context.Pagos.AddAsync(pago, ct);
 

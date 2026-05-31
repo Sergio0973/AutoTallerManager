@@ -4,10 +4,12 @@ using Application.Abstractions;
 using Application.Pagos.UseCase;
 using Domain.ValueObjects.Pagos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Pagos.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class PagoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -85,6 +87,11 @@ public sealed class PagoController : BaseApiController
         if (pago is null)
         {
             return NotFound();
+        }
+
+        if (string.Equals(pago.Estado.Value, "Confirmado", StringComparison.OrdinalIgnoreCase))
+        {
+            return Conflict(new { message = "No se puede eliminar un pago confirmado." });
         }
 
         await _uow.Pagos.RemoveAsync(pago, cancellationToken);

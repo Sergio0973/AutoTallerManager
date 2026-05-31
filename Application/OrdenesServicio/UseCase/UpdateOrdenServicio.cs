@@ -32,16 +32,32 @@ public sealed class UpdateOrdenServicioValidator : AbstractValidator<UpdateOrden
 public sealed class UpdateOrdenServicioHandler : IRequestHandler<UpdateOrdenServicio>
 {
     private readonly IUnitOfWork _uow;
+    private readonly IAuditoriaService _auditoriaService;
 
-    public UpdateOrdenServicioHandler(IUnitOfWork uow)
+    public UpdateOrdenServicioHandler(IUnitOfWork uow, IAuditoriaService auditoriaService)
     {
         _uow = uow;
+        _auditoriaService = auditoriaService;
     }
 
     public async Task Handle(UpdateOrdenServicio request, CancellationToken cancellationToken)
     {
         var orden = await _uow.OrdenesServicio.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        var datosAnteriores = new
+        {
+            orden.Id,
+            orden.VehiculoId,
+            orden.RecepcionistaId,
+            orden.EstadoId,
+            orden.CitaId,
+            KilometrajeIngreso = orden.KilometrajeIngreso.Value,
+            orden.FechaIngreso,
+            orden.FechaEstimada,
+            orden.FechaEntregaReal,
+            Observaciones = orden.Observaciones?.Value
+        };
 
         _ = await _uow.Vehiculos.GetByIdAsync(request.VehiculoId, cancellationToken)
             ?? throw new KeyNotFoundException("Vehiculo no encontrado.");
@@ -69,5 +85,26 @@ public sealed class UpdateOrdenServicioHandler : IRequestHandler<UpdateOrdenServ
 
         await _uow.OrdenesServicio.UpdateAsync(orden, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        await _auditoriaService.RegistrarAsync(
+            request.RecepcionistaId,
+            "OrdenServicio",
+            orden.Id,
+            "ACTUALIZAR",
+            datosAnteriores,
+            new
+            {
+                orden.Id,
+                orden.VehiculoId,
+                orden.RecepcionistaId,
+                orden.EstadoId,
+                orden.CitaId,
+                KilometrajeIngreso = orden.KilometrajeIngreso.Value,
+                orden.FechaIngreso,
+                orden.FechaEstimada,
+                orden.FechaEntregaReal,
+                Observaciones = orden.Observaciones?.Value
+            },
+            cancellationToken);
     }
 }

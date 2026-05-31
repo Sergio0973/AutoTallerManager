@@ -12,4 +12,5 @@ public interface IOrdenServicioRepository
     Task AddAsync(OrdenServicio orden, CancellationToken ct = default);
     Task UpdateAsync(OrdenServicio orden, CancellationToken ct = default);
     Task RemoveAsync(OrdenServicio orden, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

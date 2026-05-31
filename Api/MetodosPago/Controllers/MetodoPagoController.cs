@@ -58,6 +58,11 @@ public sealed class MetodoPagoController : BaseApiController
             return NotFound();
         }
 
+        if (await _uow.MetodosPago.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el metodo de pago porque tiene pagos asociados." });
+        }
+
         await _uow.MetodosPago.RemoveAsync(metodo, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return NoContent();

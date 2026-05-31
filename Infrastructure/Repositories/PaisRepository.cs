@@ -35,4 +35,9 @@ public sealed class PaisRepository : IPaisRepository
         _context.Paises.Remove(pais);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Departamentos.AnyAsync(d => d.PaisId == id, ct);
+    }
 }

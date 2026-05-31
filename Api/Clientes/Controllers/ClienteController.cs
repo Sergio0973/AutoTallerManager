@@ -3,10 +3,12 @@ using Api.Common.Controllers;
 using Application.Abstractions;
 using Application.Clientes.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Clientes.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class ClienteController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -20,9 +22,21 @@ public sealed class ClienteController : BaseApiController
 
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<ClienteDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ClienteDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<ClienteDto>>> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var clientes = await _uow.Clientes.GetAllAsync(cancellationToken);
+        if (pageNumber <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { message = "pageNumber y pageSize deben ser mayores a cero." });
+        }
+
+        var total = await _uow.Clientes.CountAsync(search, cancellationToken);
+        var clientes = await _uow.Clientes.GetPagedAsync(pageNumber, pageSize, search, cancellationToken);
+        Response.Headers["X-Total-Count"] = total.ToString();
+
         return Ok(clientes.Select(Map).ToList());
     }
 
@@ -61,6 +75,11 @@ public sealed class ClienteController : BaseApiController
         if (cliente is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Clientes.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el cliente porque tiene vehiculos, telefonos, correos o direcciones asociados." });
         }
 
         await _uow.Clientes.RemoveAsync(cliente, cancellationToken);

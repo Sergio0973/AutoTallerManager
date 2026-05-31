@@ -13,4 +13,5 @@ public interface IFacturaRepository
     Task AddAsync(Factura factura, CancellationToken ct = default);
     Task UpdateAsync(Factura factura, CancellationToken ct = default);
     Task RemoveAsync(Factura factura, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

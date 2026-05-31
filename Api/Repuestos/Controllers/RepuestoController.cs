@@ -5,10 +5,12 @@ using Application.Repuestos.UseCase;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Repuestos.Controllers;
 
 [Authorize(Policy = "Admin")]
+[EnableRateLimiting("repuestos-limit")]
 public sealed class RepuestoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -21,9 +23,22 @@ public sealed class RepuestoController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<RepuestoDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<RepuestoDto>>> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] int? categoriaId = null,
+        CancellationToken cancellationToken = default)
     {
-        var repuestos = await _uow.Repuestos.GetAllAsync(cancellationToken);
+        if (pageNumber <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { message = "pageNumber y pageSize deben ser mayores a cero." });
+        }
+
+        var total = await _uow.Repuestos.CountAsync(search, categoriaId, cancellationToken);
+        var repuestos = await _uow.Repuestos.GetPagedAsync(pageNumber, pageSize, search, categoriaId, cancellationToken);
+        Response.Headers["X-Total-Count"] = total.ToString();
+
         return Ok(repuestos.Select(Map).ToList());
     }
 
@@ -77,6 +92,11 @@ public sealed class RepuestoController : BaseApiController
         if (repuesto is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Repuestos.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el repuesto porque tiene compras, ordenes, proveedores o movimientos de inventario asociados." });
         }
 
         await _uow.Repuestos.RemoveAsync(repuesto, cancellationToken);

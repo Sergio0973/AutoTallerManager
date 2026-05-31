@@ -35,7 +35,6 @@ public sealed class RolController : BaseApiController
     }
 
     [HttpPost]
-    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateRolRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateRol(request.Nombre, request.Descripcion), cancellationToken);
@@ -57,6 +56,11 @@ public sealed class RolController : BaseApiController
         if (rol is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Roles.HasUsuariosAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el rol porque tiene usuarios asociados." });
         }
 
         await _uow.Roles.RemoveAsync(rol, cancellationToken);

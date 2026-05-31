@@ -3,10 +3,12 @@ using Api.MarcasVehiculo.Dtos;
 using Application.Abstractions;
 using Application.MarcasVehiculo.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.MarcasVehiculo.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class MarcaVehiculoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -54,6 +56,11 @@ public sealed class MarcaVehiculoController : BaseApiController
         if (marca is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.MarcasVehiculo.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar la marca porque tiene modelos asociados." });
         }
 
         await _uow.MarcasVehiculo.RemoveAsync(marca, cancellationToken);

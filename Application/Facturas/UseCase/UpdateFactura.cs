@@ -34,16 +34,39 @@ public sealed class UpdateFacturaValidator : AbstractValidator<UpdateFactura>
 public sealed class UpdateFacturaHandler : IRequestHandler<UpdateFactura>
 {
     private readonly IUnitOfWork _uow;
+    private readonly IAuditoriaService _auditoriaService;
 
-    public UpdateFacturaHandler(IUnitOfWork uow)
+    public UpdateFacturaHandler(IUnitOfWork uow, IAuditoriaService auditoriaService)
     {
         _uow = uow;
+        _auditoriaService = auditoriaService;
     }
 
     public async Task Handle(UpdateFactura request, CancellationToken cancellationToken)
     {
         var factura = await _uow.Facturas.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new KeyNotFoundException("Factura no encontrada.");
+
+        var datosAnteriores = new
+        {
+            factura.Id,
+            factura.OrdenId,
+            factura.EstadoFacturaId,
+            factura.UsuarioId,
+            factura.Valores.ManoDeObra,
+            factura.Valores.CostoRepuestos,
+            factura.Valores.Descuento,
+            factura.Valores.ImpuestoPct,
+            factura.Valores.Subtotal,
+            factura.Valores.Total,
+            factura.FechaEmision,
+            Observaciones = factura.Observaciones?.Value
+        };
+
+        if (await _uow.Pagos.HasConfirmedByFacturaIdAsync(factura.Id, cancellationToken))
+        {
+            throw new InvalidOperationException("No se puede modificar una factura con pagos confirmados.");
+        }
 
         _ = await _uow.EstadosFactura.GetByIdAsync(request.EstadoFacturaId, cancellationToken)
             ?? throw new KeyNotFoundException("Estado de factura no encontrado.");
@@ -61,5 +84,28 @@ public sealed class UpdateFacturaHandler : IRequestHandler<UpdateFactura>
 
         await _uow.Facturas.UpdateAsync(factura, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        await _auditoriaService.RegistrarAsync(
+            factura.UsuarioId,
+            "Factura",
+            factura.Id,
+            "ACTUALIZAR",
+            datosAnteriores,
+            new
+            {
+                factura.Id,
+                factura.OrdenId,
+                factura.EstadoFacturaId,
+                factura.UsuarioId,
+                factura.Valores.ManoDeObra,
+                factura.Valores.CostoRepuestos,
+                factura.Valores.Descuento,
+                factura.Valores.ImpuestoPct,
+                factura.Valores.Subtotal,
+                factura.Valores.Total,
+                factura.FechaEmision,
+                Observaciones = factura.Observaciones?.Value
+            },
+            cancellationToken);
     }
 }

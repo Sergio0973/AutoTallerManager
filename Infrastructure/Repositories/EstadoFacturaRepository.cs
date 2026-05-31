@@ -35,4 +35,9 @@ public sealed class EstadoFacturaRepository : IEstadoFacturaRepository
         _context.EstadosFactura.Remove(estado);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Facturas.AnyAsync(f => f.EstadoFacturaId == id, ct);
+    }
 }

@@ -35,4 +35,12 @@ public sealed class TipoServicioRepository : ITipoServicioRepository
         _context.TiposServicio.Remove(tipoServicio);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Citas.AnyAsync(c => c.TipoServicioId == id, ct)
+            || await _context.OrdenesTiposServicio.AnyAsync(o => o.TipoServicioId == id, ct)
+            || await _context.TareasMecanicos.AnyAsync(t => t.TipoServicioId == id, ct)
+            || await _context.Garantias.AnyAsync(g => g.TipoServicioId == id, ct);
+    }
 }

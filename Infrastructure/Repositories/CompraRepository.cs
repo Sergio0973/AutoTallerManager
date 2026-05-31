@@ -43,4 +43,10 @@ public sealed class CompraRepository : ICompraRepository
         _context.Compras.Remove(compra);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.DetallesCompra.AnyAsync(d => d.CompraId == id, ct)
+            || await _context.LogsInventario.AnyAsync(l => l.CompraId == id, ct);
+    }
 }

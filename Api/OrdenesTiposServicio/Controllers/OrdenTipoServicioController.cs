@@ -3,10 +3,12 @@ using Api.OrdenesTiposServicio.Dtos;
 using Application.Abstractions;
 using Application.OrdenesTiposServicio.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.OrdenesTiposServicio.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class OrdenTipoServicioController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

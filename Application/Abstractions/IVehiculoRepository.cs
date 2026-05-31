@@ -17,4 +17,5 @@ public interface IVehiculoRepository
     Task RemoveAsync(Vehiculo vehiculo, CancellationToken ct = default);
     Task<bool> ExistsVinAsync(Vin vin, CancellationToken ct = default);
     Task<bool> ExistsPlacaAsync(Placa placa, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

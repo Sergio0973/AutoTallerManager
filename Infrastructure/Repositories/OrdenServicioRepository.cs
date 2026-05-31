@@ -72,4 +72,17 @@ public sealed class OrdenServicioRepository : IOrdenServicioRepository
         _context.OrdenesServicio.Remove(orden);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.OrdenesMecanicos.AnyAsync(o => o.OrdenId == id, ct)
+            || await _context.OrdenesTiposServicio.AnyAsync(o => o.OrdenId == id, ct)
+            || await _context.DetallesOrden.AnyAsync(d => d.OrdenId == id, ct)
+            || await _context.TareasMecanicos.AnyAsync(t => t.OrdenId == id, ct)
+            || await _context.NotasOrden.AnyAsync(n => n.OrdenId == id, ct)
+            || await _context.HistorialEstadosOrden.AnyAsync(h => h.OrdenId == id, ct)
+            || await _context.Facturas.AnyAsync(f => f.OrdenId == id, ct)
+            || await _context.Garantias.AnyAsync(g => g.OrdenId == id, ct)
+            || await _context.LogsInventario.AnyAsync(l => l.OrdenId == id, ct);
+    }
 }

@@ -15,4 +15,5 @@ public interface IUsuarioRepository
     Task UpdateAsync(Usuario usuario, CancellationToken ct = default);
     Task RemoveAsync(Usuario usuario, CancellationToken ct = default);
     Task<bool> ExistsCorreoAsync(CorreoUsuario correo, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

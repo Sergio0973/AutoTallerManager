@@ -11,4 +11,5 @@ public interface ITipoServicioRepository
     Task AddAsync(TipoServicio tipoServicio, CancellationToken ct = default);
     Task UpdateAsync(TipoServicio tipoServicio, CancellationToken ct = default);
     Task RemoveAsync(TipoServicio tipoServicio, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

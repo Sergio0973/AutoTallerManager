@@ -88,4 +88,12 @@ public sealed class ClienteRepository : IClienteRepository
     {
         return await _context.Clientes.AnyAsync(c => c.DocumentoIdentidad == documento, ct);
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Vehiculos.AnyAsync(v => v.ClienteId == id, ct)
+            || await _context.ClienteTelefonos.AnyAsync(t => t.ClienteId == id, ct)
+            || await _context.ClienteCorreos.AnyAsync(c => c.ClienteId == id, ct)
+            || await _context.ClienteDirecciones.AnyAsync(d => d.ClienteId == id, ct);
+    }
 }

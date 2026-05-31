@@ -3,10 +3,12 @@ using Api.NotasOrden.Dtos;
 using Application.Abstractions;
 using Application.NotasOrden.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.NotasOrden.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class NotaOrdenController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

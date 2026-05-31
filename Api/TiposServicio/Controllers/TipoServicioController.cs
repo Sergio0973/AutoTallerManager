@@ -3,10 +3,12 @@ using Api.TiposServicio.Dtos;
 using Application.Abstractions;
 using Application.TiposServicio.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.TiposServicio.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class TipoServicioController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -54,6 +56,11 @@ public sealed class TipoServicioController : BaseApiController
         if (tipo is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.TiposServicio.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el tipo de servicio porque tiene citas, ordenes, tareas o garantias asociadas." });
         }
 
         await _uow.TiposServicio.RemoveAsync(tipo, cancellationToken);

@@ -76,6 +76,11 @@ public sealed class CompraController : BaseApiController
             return NotFound();
         }
 
+        if (await _uow.Compras.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar la compra porque tiene detalles o movimientos de inventario asociados." });
+        }
+
         await _uow.Compras.RemoveAsync(compra, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return NoContent();

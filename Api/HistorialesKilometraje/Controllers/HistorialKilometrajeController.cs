@@ -3,10 +3,12 @@ using Api.HistorialesKilometraje.Dtos;
 using Application.Abstractions;
 using Application.HistorialesKilometraje.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.HistorialesKilometraje.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class HistorialKilometrajeController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

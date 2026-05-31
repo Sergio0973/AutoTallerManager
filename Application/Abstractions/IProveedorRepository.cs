@@ -14,4 +14,5 @@ public interface IProveedorRepository
     Task AddAsync(Proveedor proveedor, CancellationToken ct = default);
     Task UpdateAsync(Proveedor proveedor, CancellationToken ct = default);
     Task RemoveAsync(Proveedor proveedor, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

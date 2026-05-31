@@ -35,4 +35,9 @@ public sealed class MarcaVehiculoRepository : IMarcaVehiculoRepository
         _context.MarcasVehiculo.Remove(marca);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.ModelosVehiculo.AnyAsync(m => m.MarcaId == id, ct);
+    }
 }

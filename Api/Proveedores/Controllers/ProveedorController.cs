@@ -93,6 +93,11 @@ public sealed class ProveedorController : BaseApiController
             return NotFound();
         }
 
+        if (await _uow.Proveedores.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el proveedor porque tiene compras o repuestos asociados." });
+        }
+
         await _uow.Proveedores.RemoveAsync(proveedor, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return NoContent();

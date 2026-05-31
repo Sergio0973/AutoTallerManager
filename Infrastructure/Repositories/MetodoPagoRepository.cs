@@ -35,4 +35,9 @@ public sealed class MetodoPagoRepository : IMetodoPagoRepository
         _context.MetodosPago.Remove(metodo);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Pagos.AnyAsync(p => p.MetodoPagoId == id, ct);
+    }
 }

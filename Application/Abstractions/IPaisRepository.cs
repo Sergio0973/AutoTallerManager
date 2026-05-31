@@ -11,4 +11,5 @@ public interface IPaisRepository
     Task AddAsync(Pais pais, CancellationToken ct = default);
     Task UpdateAsync(Pais pais, CancellationToken ct = default);
     Task RemoveAsync(Pais pais, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

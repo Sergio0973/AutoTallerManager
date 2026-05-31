@@ -11,4 +11,5 @@ public interface IRolRepository
     Task AddAsync(Rol rol, CancellationToken ct = default);
     Task UpdateAsync(Rol rol, CancellationToken ct = default);
     Task RemoveAsync(Rol rol, CancellationToken ct = default);
+    Task<bool> HasUsuariosAsync(int id, CancellationToken ct = default);
 }

@@ -35,4 +35,9 @@ public sealed class CategoriaRepuestoRepository : ICategoriaRepuestoRepository
         _context.CategoriasRepuesto.Remove(categoria);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Repuestos.AnyAsync(r => r.CategoriaId == id, ct);
+    }
 }

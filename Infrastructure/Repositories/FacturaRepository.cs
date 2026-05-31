@@ -61,4 +61,9 @@ public sealed class FacturaRepository : IFacturaRepository
         _context.Facturas.Remove(factura);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Pagos.AnyAsync(p => p.FacturaId == id, ct);
+    }
 }

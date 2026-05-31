@@ -12,4 +12,5 @@ public interface IUnidadMedidaRepository
     Task AddAsync(UnidadMedida unidad, CancellationToken ct = default);
     Task UpdateAsync(UnidadMedida unidad, CancellationToken ct = default);
     Task RemoveAsync(UnidadMedida unidad, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

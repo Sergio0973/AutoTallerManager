@@ -35,4 +35,10 @@ public sealed class EstadoOrdenRepository : IEstadoOrdenRepository
         _context.EstadosOrden.Remove(estado);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.OrdenesServicio.AnyAsync(o => o.EstadoId == id, ct)
+            || await _context.HistorialEstadosOrden.AnyAsync(h => h.EstadoId == id, ct);
+    }
 }

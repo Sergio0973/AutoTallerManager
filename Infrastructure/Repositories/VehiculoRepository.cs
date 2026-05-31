@@ -81,4 +81,11 @@ public sealed class VehiculoRepository : IVehiculoRepository
     {
         return await _context.Vehiculos.AnyAsync(v => v.Placa == placa, ct);
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Citas.AnyAsync(c => c.VehiculoId == id, ct)
+            || await _context.OrdenesServicio.AnyAsync(o => o.VehiculoId == id, ct)
+            || await _context.HistorialesKilometraje.AnyAsync(h => h.VehiculoId == id, ct);
+    }
 }

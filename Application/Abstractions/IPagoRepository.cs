@@ -10,6 +10,7 @@ public interface IPagoRepository
     Task<IReadOnlyList<Pago>> GetByFacturaIdAsync(int facturaId, CancellationToken ct = default);
     Task<IReadOnlyList<Pago>> GetByMetodoPagoIdAsync(int metodoPagoId, CancellationToken ct = default);
     Task<IReadOnlyList<Pago>> GetByEstadoAsync(EstadoPago estado, CancellationToken ct = default);
+    Task<bool> HasConfirmedByFacturaIdAsync(int facturaId, CancellationToken ct = default);
     Task AddAsync(Pago pago, CancellationToken ct = default);
     Task UpdateAsync(Pago pago, CancellationToken ct = default);
     Task RemoveAsync(Pago pago, CancellationToken ct = default);

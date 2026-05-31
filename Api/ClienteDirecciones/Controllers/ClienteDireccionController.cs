@@ -3,10 +3,12 @@ using Api.Common.Controllers;
 using Application.Abstractions;
 using Application.ClienteDirecciones.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.ClienteDirecciones.Controllers;
 
+[Authorize(Policy = "Recepcionista")]
 public sealed class ClienteDireccionController : BaseApiController
 {
     private readonly IUnitOfWork _uow;

@@ -15,4 +15,5 @@ public interface IClienteRepository
     Task UpdateAsync(Cliente cliente, CancellationToken ct = default);
     Task RemoveAsync(Cliente cliente, CancellationToken ct = default);
     Task<bool> ExistsDocumentoAsync(Documento documento, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

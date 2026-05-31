@@ -38,4 +38,9 @@ public sealed class DepartamentoRepository : IDepartamentoRepository
         _context.Departamentos.Remove(departamento);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.Ciudades.AnyAsync(c => c.DepartamentoId == id, ct);
+    }
 }

@@ -3,10 +3,12 @@ using Api.Departamentos.Dtos;
 using Application.Abstractions;
 using Application.Departamentos.UseCase;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Departamentos.Controllers;
 
+[Authorize(Policy = "Admin")]
 public sealed class DepartamentoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -57,6 +59,11 @@ public sealed class DepartamentoController : BaseApiController
         if (departamento is null)
         {
             return NotFound();
+        }
+
+        if (await _uow.Departamentos.HasDependenciesAsync(id, cancellationToken))
+        {
+            return Conflict(new { message = "No se puede eliminar el departamento porque tiene ciudades asociadas." });
         }
 
         await _uow.Departamentos.RemoveAsync(departamento, cancellationToken);

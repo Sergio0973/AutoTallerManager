@@ -11,4 +11,5 @@ public interface IMetodoPagoRepository
     Task AddAsync(MetodoPago metodo, CancellationToken ct = default);
     Task UpdateAsync(MetodoPago metodo, CancellationToken ct = default);
     Task RemoveAsync(MetodoPago metodo, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

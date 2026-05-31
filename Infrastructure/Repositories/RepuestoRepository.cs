@@ -78,4 +78,12 @@ public sealed class RepuestoRepository : IRepuestoRepository
     {
         return await _context.Repuestos.AnyAsync(r => r.Codigo == codigo, ct);
     }
+
+    public async Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default)
+    {
+        return await _context.DetallesOrden.AnyAsync(d => d.RepuestoId == id, ct)
+            || await _context.DetallesCompra.AnyAsync(d => d.RepuestoId == id, ct)
+            || await _context.RepuestosProveedor.AnyAsync(r => r.RepuestoId == id, ct)
+            || await _context.LogsInventario.AnyAsync(l => l.RepuestoId == id, ct);
+    }
 }

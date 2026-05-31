@@ -11,4 +11,5 @@ public interface ICategoriaRepuestoRepository
     Task AddAsync(CategoriaRepuesto categoria, CancellationToken ct = default);
     Task UpdateAsync(CategoriaRepuesto categoria, CancellationToken ct = default);
     Task RemoveAsync(CategoriaRepuesto categoria, CancellationToken ct = default);
+    Task<bool> HasDependenciesAsync(int id, CancellationToken ct = default);
 }

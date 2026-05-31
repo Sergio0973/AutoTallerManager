@@ -4,10 +4,12 @@ using Application.Abstractions;
 using Application.Garantias.UseCase;
 using Domain.ValueObjects.Garantias;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Garantias.Controllers;
 
+[Authorize(Policy = "Mecanico")]
 public sealed class GarantiaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
