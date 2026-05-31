@@ -128,6 +128,62 @@ Notas:
 - Los usuarios creados antes de agregar `PasswordHash` quedan sin contrasena y no pueden iniciar sesion.
 - Para probar login, crear un usuario nuevo enviando `contrasena`.
 
+### Datos semilla
+
+Al iniciar la API, el sistema crea datos base si no existen:
+
+- Roles: `Admin`, `Mecanico`, `Recepcionista`.
+- Estados de orden: `Pendiente`, `En proceso`, `Completada`, `Cancelada`.
+- Estados de factura: `Emitida`, `Pagada`, `Anulada`.
+- Metodos de pago: `Efectivo`, `Tarjeta`, `Transferencia`.
+- Tipos de servicio: `Diagnostico`, `Mantenimiento preventivo`, `Reparacion`.
+- Inventario base: categorias `Encendido`, `Frenos`, `Filtros` y unidades `Unidad`, `Litro`.
+
+En ambiente `Development` tambien crea usuarios de prueba si no existen:
+
+```json
+{
+  "correo": "admin.seed@autotaller.com",
+  "contrasena": "Admin123!"
+}
+```
+
+```json
+{
+  "correo": "recepcionista.seed@autotaller.com",
+  "contrasena": "Recepcionista123!"
+}
+```
+
+```json
+{
+  "correo": "mecanico.seed@autotaller.com",
+  "contrasena": "Mecanico123!"
+}
+```
+
+### Reset de contrasena por Admin
+
+```http
+PUT /api/Usuario/{id}/password
+```
+
+Requiere token `Admin`.
+
+```json
+{
+  "nuevaContrasena": "Nueva123!"
+}
+```
+
+Resultado esperado: `204 No Content`.
+
+Prueba recomendada:
+
+1. Login como `Admin`.
+2. Ejecutar `PUT /api/Usuario/7/password`.
+3. Hacer login con el usuario `7` usando la nueva contrasena.
+
 ### Autorizacion por roles
 
 Primera tanda protegida con politica `Admin`:
@@ -347,9 +403,14 @@ Implementado en listados principales:
 
 ```http
 GET /api/Cliente?pageNumber=1&pageSize=20&search=Carlos
-GET /api/Vehiculo?pageNumber=1&pageSize=20
+GET /api/Vehiculo?pageNumber=1&pageSize=20&clienteId=2
+GET /api/Vehiculo?pageNumber=1&pageSize=20&vin=1HGCM82633A004352
+GET /api/Vehiculo?pageNumber=1&pageSize=20&placa=ABC123
 GET /api/OrdenServicio?pageNumber=1&pageSize=20&estadoId=1
 GET /api/Repuesto?pageNumber=1&pageSize=20&categoriaId=5
+GET /api/Repuesto?pageNumber=1&pageSize=20&search=bujia
+GET /api/Repuesto?pageNumber=1&pageSize=20&stockMinimo=5
+GET /api/Repuesto?pageNumber=1&pageSize=20&soloBajoStock=true
 ```
 
 Comportamiento:
@@ -358,7 +419,15 @@ Comportamiento:
 - `pageSize` por defecto: `20`.
 - `search` filtra donde el repositorio tenga soporte de busqueda.
 - `estadoId` filtra ordenes de servicio por estado.
+- `vehiculoId` filtra ordenes por vehiculo.
+- `recepcionistaId` filtra ordenes por recepcionista.
+- `fechaIngresoDesde` y `fechaIngresoHasta` filtran ordenes por rango de fecha de ingreso.
+- `clienteId` filtra vehiculos por cliente.
+- `vin` filtra vehiculos por numero de serie.
+- `placa` filtra vehiculos por placa.
 - `categoriaId` filtra repuestos por categoria.
+- `stockMinimo` filtra repuestos cuyo stock actual sea menor o igual al valor indicado.
+- `soloBajoStock=true` filtra repuestos cuyo stock actual sea menor o igual al stock minimo configurado.
 - Responde header `X-Total-Count` con el total de registros que cumplen el filtro.
 - Si `pageNumber` o `pageSize` son menores o iguales a cero, responde `400 Bad Request`.
 
@@ -367,9 +436,12 @@ Prueba recomendada:
 - Con token `Recepcionista`, ejecutar `GET /api/Cliente?pageNumber=1&pageSize=10`.
 - Verificar respuesta `200 OK`.
 - Revisar en response headers el valor `X-Total-Count`.
-- Repetir con `GET /api/Vehiculo?pageNumber=1&pageSize=10`.
+- Repetir con `GET /api/Vehiculo?pageNumber=1&pageSize=10&clienteId=2`.
+- Repetir con `GET /api/Vehiculo?pageNumber=1&pageSize=10&vin=1HGCM82633A004352`.
 - Repetir con `GET /api/OrdenServicio?pageNumber=1&pageSize=10`.
+- Repetir con `GET /api/OrdenServicio?pageNumber=1&pageSize=10&vehiculoId=2&fechaIngresoDesde=2026-05-30&fechaIngresoHasta=2026-05-31`.
 - Con token `Admin`, repetir con `GET /api/Repuesto?pageNumber=1&pageSize=10`.
+- Con token `Admin`, repetir con `GET /api/Repuesto?pageNumber=1&pageSize=10&soloBajoStock=true`.
 
 ## 12. Rate limiting
 
@@ -390,6 +462,138 @@ Comportamiento esperado al exceder el limite:
 ```
 
 Nota: para probarlo manualmente desde Swagger hay que repetir muchas solicitudes en menos de un minuto. Es mas practico validarlo con una prueba automatizada o un script.
+
+## 13. Reglas de estado de orden
+
+Estados terminales:
+
+- `Completada`
+- `Cancelada`
+
+Reglas implementadas:
+
+- No se puede crear una orden nueva para un vehiculo que ya tenga una orden activa.
+- No se puede crear o actualizar una cita para un vehiculo que ya tenga una orden activa.
+- No se puede modificar una orden en estado `Completada` o `Cancelada`.
+- No se puede asignar un mecanico a una orden si ya tiene otra orden activa.
+- No se puede asignar mecanico a una orden `Completada` o `Cancelada`.
+- No se puede crear tarea mecanica en una orden `Completada` o `Cancelada`.
+- No se puede agregar detalle de repuesto a una orden `Completada` o `Cancelada`.
+- No se puede crear nota en una orden `Completada` o `Cancelada`.
+- No se puede crear historial de estado en una orden `Completada` o `Cancelada`.
+- No se puede crear garantia en una orden `Completada` o `Cancelada`.
+- No se puede facturar una orden `Cancelada`.
+
+Comportamiento esperado:
+
+```text
+409 Conflict
+```
+
+Nota: las comparaciones se hacen por nombre de estado, no por `Id`, para no depender de IDs fijos en la base de datos.
+
+### Prueba de orden activa por vehiculo
+
+Requiere token `Recepcionista` o `Admin`.
+
+1. Crear una orden para un vehiculo existente usando un estado no terminal, por ejemplo `Pendiente` o `En proceso`.
+2. Intentar crear otra orden para el mismo `vehiculoId` sin completar o cancelar la anterior.
+
+Body de ejemplo:
+
+```json
+{
+  "vehiculoId": 2,
+  "recepcionistaId": 3,
+  "estadoId": 1,
+  "citaId": null,
+  "kilometrajeIngreso": 90000,
+  "fechaIngreso": "2026-05-31",
+  "fechaEstimada": "2026-06-01",
+  "observaciones": "Prueba de bloqueo por orden activa"
+}
+```
+
+Resultado esperado:
+
+```json
+{
+  "message": "El vehiculo ya tiene una orden de servicio activa."
+}
+```
+
+### Prueba de disponibilidad de mecanico
+
+Requiere token `Mecanico` o `Admin`.
+
+1. Identificar un mecanico que ya este asignado a una orden activa.
+2. Intentar asignar ese mismo mecanico a otra orden activa.
+
+Body de ejemplo:
+
+```json
+{
+  "ordenId": 5,
+  "mecanicoId": 4,
+  "fechaAsignacion": "2026-05-31"
+}
+```
+
+Resultado esperado:
+
+```json
+{
+  "message": "El mecanico ya tiene una orden de servicio activa."
+}
+```
+
+### Prueba de cita bloqueada por orden activa
+
+Requiere token `Recepcionista` o `Admin`.
+
+Endpoint:
+
+```http
+POST /api/Cita
+```
+
+Body de ejemplo:
+
+```json
+{
+  "vehiculoId": 2,
+  "recepcionistaId": 3,
+  "tipoServicioId": 1,
+  "fechaCita": "2026-06-02",
+  "horaInicio": "09:00:00",
+  "horaFin": "10:00:00",
+  "estado": "Programada",
+  "observaciones": "Prueba de bloqueo de cita por orden activa"
+}
+```
+
+Si el vehiculo ya tiene una orden activa, resultado esperado:
+
+```json
+{
+  "message": "El vehiculo ya tiene una orden de servicio activa."
+}
+```
+
+### Prueba de cita duplicada por horario
+
+Requiere un vehiculo sin orden activa.
+
+1. Crear una cita para un vehiculo disponible.
+2. Crear otra cita para el mismo `vehiculoId`, la misma `fechaCita` y un horario cruzado.
+
+Resultado esperado:
+
+```json
+{
+  "message": "El vehiculo ya tiene una cita en ese horario."
+}
+```
 
 ## 2. Cliente y vehiculo
 

@@ -9,8 +9,21 @@ public interface IVehiculoRepository
     Task<Vehiculo?> GetByVinAsync(Vin vin, CancellationToken ct = default);
     Task<Vehiculo?> GetByPlacaAsync(Placa placa, CancellationToken ct = default);
     Task<IReadOnlyList<Vehiculo>> GetAllAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<Vehiculo>> GetPagedAsync(int pageNumber, int pageSize, string? search = null, CancellationToken ct = default);
-    Task<int> CountAsync(string? search = null, CancellationToken ct = default);
+    Task<IReadOnlyList<Vehiculo>> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? search = null,
+        int? clienteId = null,
+        string? vin = null,
+        string? placa = null,
+        CancellationToken ct = default);
+
+    Task<int> CountAsync(
+        string? search = null,
+        int? clienteId = null,
+        string? vin = null,
+        string? placa = null,
+        CancellationToken ct = default);
 
     Task AddAsync(Vehiculo vehiculo, CancellationToken ct = default);
     Task UpdateAsync(Vehiculo vehiculo, CancellationToken ct = default);

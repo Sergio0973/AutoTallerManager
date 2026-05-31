@@ -39,19 +39,32 @@ public sealed class VehiculoRepository : IVehiculoRepository
         return await _context.Vehiculos.ToListAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Vehiculo>> GetPagedAsync(int pageNumber, int pageSize, string? search = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Vehiculo>> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? search = null,
+        int? clienteId = null,
+        string? vin = null,
+        string? placa = null,
+        CancellationToken ct = default)
     {
-        var query = _context.Vehiculos.AsQueryable();
+        var query = ApplyFilters(_context.Vehiculos.AsQueryable(), search, clienteId, vin, placa);
 
         return await query
+            .OrderBy(v => v.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
     }
 
-    public async Task<int> CountAsync(string? search = null, CancellationToken ct = default)
+    public async Task<int> CountAsync(
+        string? search = null,
+        int? clienteId = null,
+        string? vin = null,
+        string? placa = null,
+        CancellationToken ct = default)
     {
-        var query = _context.Vehiculos.AsQueryable();
+        var query = ApplyFilters(_context.Vehiculos.AsQueryable(), search, clienteId, vin, placa);
         return await query.CountAsync(ct);
     }
 
@@ -87,5 +100,41 @@ public sealed class VehiculoRepository : IVehiculoRepository
         return await _context.Citas.AnyAsync(c => c.VehiculoId == id, ct)
             || await _context.OrdenesServicio.AnyAsync(o => o.VehiculoId == id, ct)
             || await _context.HistorialesKilometraje.AnyAsync(h => h.VehiculoId == id, ct);
+    }
+
+    private static IQueryable<Vehiculo> ApplyFilters(
+        IQueryable<Vehiculo> query,
+        string? search,
+        int? clienteId,
+        string? vin,
+        string? placa)
+    {
+        if (clienteId.HasValue)
+        {
+            query = query.Where(v => v.ClienteId == clienteId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(vin))
+        {
+            var normalizedVin = vin.Trim().ToUpperInvariant();
+            query = query.Where(v => v.Vin.Value.Contains(normalizedVin));
+        }
+
+        if (!string.IsNullOrWhiteSpace(placa))
+        {
+            var normalizedPlaca = placa.Trim().ToUpperInvariant();
+            query = query.Where(v => v.Placa.Value.Contains(normalizedPlaca));
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToUpperInvariant();
+            query = query.Where(v =>
+                v.Vin.Value.Contains(term) ||
+                v.Placa.Value.Contains(term) ||
+                v.Color.Value.ToUpper().Contains(term));
+        }
+
+        return query;
     }
 }

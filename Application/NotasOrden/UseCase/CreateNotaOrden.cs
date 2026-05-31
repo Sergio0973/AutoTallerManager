@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Domain.Entities;
 using Domain.ValueObjects.NotaOrdenes;
 using FluentValidation;
@@ -26,8 +27,10 @@ public sealed class CreateNotaOrdenHandler : IRequestHandler<CreateNotaOrden, in
 
     public async Task<int> Handle(CreateNotaOrden request, CancellationToken cancellationToken)
     {
-        _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
+        var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, cancellationToken);
 
         _ = await _uow.Usuarios.GetByIdAsync(request.UsuarioId, cancellationToken)
             ?? throw new KeyNotFoundException("Usuario no encontrado.");

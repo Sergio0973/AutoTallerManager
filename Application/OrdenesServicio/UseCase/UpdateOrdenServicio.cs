@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Application.Common.Security;
 using Domain.ValueObjects.OrdenServicios;
 using FluentValidation;
@@ -44,6 +45,8 @@ public sealed class UpdateOrdenServicioHandler : IRequestHandler<UpdateOrdenServ
     {
         var orden = await _uow.OrdenesServicio.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, cancellationToken);
 
         var datosAnteriores = new
         {

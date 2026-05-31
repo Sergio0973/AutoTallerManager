@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Domain.Entities;
 using Domain.ValueObjects.DetalleOrdenes;
 using Domain.ValueObjects.LogInventarios;
@@ -33,8 +34,10 @@ public sealed class CreateDetalleOrdenHandler : IRequestHandler<CreateDetalleOrd
 
         await _uow.ExecuteInTransactionAsync(async ct =>
         {
-            _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, ct)
+            var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, ct)
                 ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+            await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, ct);
 
             _ = await _uow.Usuarios.GetByIdAsync(request.UsuarioId, ct)
                 ?? throw new KeyNotFoundException("Usuario no encontrado.");

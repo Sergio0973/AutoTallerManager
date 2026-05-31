@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Domain.Entities;
 using Domain.ValueObjects.HistorialEstadoOrdenes;
 using FluentValidation;
@@ -31,8 +32,10 @@ public sealed class CreateHistorialEstadoOrdenHandler : IRequestHandler<CreateHi
 
     public async Task<int> Handle(CreateHistorialEstadoOrden request, CancellationToken cancellationToken)
     {
-        _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
+        var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, cancellationToken);
 
         _ = await _uow.EstadosOrden.GetByIdAsync(request.EstadoId, cancellationToken)
             ?? throw new KeyNotFoundException("Estado de orden no encontrado.");

@@ -28,6 +28,8 @@ public sealed class RepuestoController : BaseApiController
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,
         [FromQuery] int? categoriaId = null,
+        [FromQuery] int? stockMinimo = null,
+        [FromQuery] bool? soloBajoStock = null,
         CancellationToken cancellationToken = default)
     {
         if (pageNumber <= 0 || pageSize <= 0)
@@ -35,8 +37,8 @@ public sealed class RepuestoController : BaseApiController
             return BadRequest(new { message = "pageNumber y pageSize deben ser mayores a cero." });
         }
 
-        var total = await _uow.Repuestos.CountAsync(search, categoriaId, cancellationToken);
-        var repuestos = await _uow.Repuestos.GetPagedAsync(pageNumber, pageSize, search, categoriaId, cancellationToken);
+        var total = await _uow.Repuestos.CountAsync(search, categoriaId, stockMinimo, soloBajoStock, cancellationToken);
+        var repuestos = await _uow.Repuestos.GetPagedAsync(pageNumber, pageSize, search, categoriaId, stockMinimo, soloBajoStock, cancellationToken);
         Response.Headers["X-Total-Count"] = total.ToString();
 
         return Ok(repuestos.Select(Map).ToList());

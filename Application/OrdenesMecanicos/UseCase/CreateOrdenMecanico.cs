@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Application.Common.Security;
 using Domain.Entities;
 using FluentValidation;
@@ -25,14 +26,21 @@ public sealed class CreateOrdenMecanicoHandler : IRequestHandler<CreateOrdenMeca
 
     public async Task<int> Handle(CreateOrdenMecanico request, CancellationToken cancellationToken)
     {
-        _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
+        var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, cancellationToken);
 
         await UserRoleGuard.EnsureMecanicoAsync(_uow, request.MecanicoId, cancellationToken);
 
         if (await _uow.OrdenesMecanicos.GetByOrdenAndMecanicoAsync(request.OrdenId, request.MecanicoId, cancellationToken) is not null)
         {
             throw new InvalidOperationException("La orden ya tiene asignado ese mecanico.");
+        }
+
+        if (await _uow.OrdenesMecanicos.HasActiveAssignmentForMecanicoAsync(request.MecanicoId, request.OrdenId, cancellationToken))
+        {
+            throw new InvalidOperationException("El mecanico ya tiene una orden de servicio activa.");
         }
 
         var item = new OrdenMecanico(request.OrdenId, request.MecanicoId, request.FechaAsignacion);

@@ -49,6 +49,11 @@ public sealed class CreateOrdenServicioHandler : IRequestHandler<CreateOrdenServ
         _ = await _uow.EstadosOrden.GetByIdAsync(request.EstadoId, cancellationToken)
             ?? throw new KeyNotFoundException("Estado de orden no encontrado.");
 
+        if (await _uow.OrdenesServicio.HasActiveOrderForVehiculoAsync(request.VehiculoId, cancellationToken))
+        {
+            throw new InvalidOperationException("El vehiculo ya tiene una orden de servicio activa.");
+        }
+
         if (request.CitaId.HasValue)
         {
             _ = await _uow.Citas.GetByIdAsync(request.CitaId.Value, cancellationToken)

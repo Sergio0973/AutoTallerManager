@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Application.Common.Security;
 using Domain.Entities;
 using Domain.ValueObjects.Garantias;
@@ -37,8 +38,10 @@ public sealed class CreateGarantiaHandler : IRequestHandler<CreateGarantia, int>
 
     public async Task<int> Handle(CreateGarantia request, CancellationToken cancellationToken)
     {
-        _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
+        var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, cancellationToken);
 
         _ = await _uow.TiposServicio.GetByIdAsync(request.TipoServicioId, cancellationToken)
             ?? throw new KeyNotFoundException("Tipo de servicio no encontrado.");

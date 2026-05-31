@@ -9,6 +9,7 @@ public interface IOrdenMecanicoRepository
     Task<IReadOnlyList<OrdenMecanico>> GetAllAsync(CancellationToken ct = default);
     Task<IReadOnlyList<OrdenMecanico>> GetByOrdenIdAsync(int ordenId, CancellationToken ct = default);
     Task<IReadOnlyList<OrdenMecanico>> GetByMecanicoIdAsync(int mecanicoId, CancellationToken ct = default);
+    Task<bool> HasActiveAssignmentForMecanicoAsync(int mecanicoId, int? excludeOrdenId = null, CancellationToken ct = default);
     Task AddAsync(OrdenMecanico ordenMecanico, CancellationToken ct = default);
     Task UpdateAsync(OrdenMecanico ordenMecanico, CancellationToken ct = default);
     Task RemoveAsync(OrdenMecanico ordenMecanico, CancellationToken ct = default);

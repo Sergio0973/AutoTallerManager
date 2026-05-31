@@ -4,6 +4,7 @@ using System.Text;
 using Api.Auth.Dtos;
 using Api.Common.Controllers;
 using Application.Abstractions;
+using Application.Common.Security;
 using Domain.ValueObjects.Usuarios;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -39,8 +40,9 @@ public sealed class AuthController : BaseApiController
             return Conflict(new { message = "El usuario no tiene un rol cargado." });
         }
 
+        var rol = NormalizeRole(usuario.Rol.Nombre.Value);
         var expiraEn = DateTime.UtcNow.AddMinutes(GetExpirationMinutes());
-        var token = CreateToken(usuario, usuario.Rol.Nombre.Value, expiraEn);
+        var token = CreateToken(usuario, rol, expiraEn);
 
         return Ok(new LoginResponse(
             token,
@@ -49,7 +51,7 @@ public sealed class AuthController : BaseApiController
                 usuario.Id,
                 usuario.Correo.Value,
                 usuario.Nombre.Value,
-                usuario.Rol.Nombre.Value)));
+                rol)));
     }
 
     private string CreateToken(Domain.Entities.Usuario usuario, string rol, DateTime expiraEn)
@@ -88,5 +90,27 @@ public sealed class AuthController : BaseApiController
         return int.TryParse(_configuration["Jwt:ExpirationMinutes"], out var minutes)
             ? minutes
             : 120;
+    }
+
+    private static string NormalizeRole(string value)
+    {
+        var normalized = value.Trim();
+
+        if (string.Equals(normalized, RoleNames.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            return RoleNames.Admin;
+        }
+
+        if (string.Equals(normalized, RoleNames.Mecanico, StringComparison.OrdinalIgnoreCase))
+        {
+            return RoleNames.Mecanico;
+        }
+
+        if (string.Equals(normalized, RoleNames.Recepcionista, StringComparison.OrdinalIgnoreCase))
+        {
+            return RoleNames.Recepcionista;
+        }
+
+        return normalized;
     }
 }

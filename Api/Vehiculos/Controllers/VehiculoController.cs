@@ -25,6 +25,9 @@ public sealed class VehiculoController : BaseApiController
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,
+        [FromQuery] int? clienteId = null,
+        [FromQuery] string? vin = null,
+        [FromQuery] string? placa = null,
         CancellationToken cancellationToken = default)
     {
         if (pageNumber <= 0 || pageSize <= 0)
@@ -32,8 +35,8 @@ public sealed class VehiculoController : BaseApiController
             return BadRequest(new { message = "pageNumber y pageSize deben ser mayores a cero." });
         }
 
-        var total = await _uow.Vehiculos.CountAsync(search, cancellationToken);
-        var vehiculos = await _uow.Vehiculos.GetPagedAsync(pageNumber, pageSize, search, cancellationToken);
+        var total = await _uow.Vehiculos.CountAsync(search, clienteId, vin, placa, cancellationToken);
+        var vehiculos = await _uow.Vehiculos.GetPagedAsync(pageNumber, pageSize, search, clienteId, vin, placa, cancellationToken);
         Response.Headers["X-Total-Count"] = total.ToString();
 
         return Ok(vehiculos.Select(Map).ToList());

@@ -49,6 +49,13 @@ public sealed class UsuarioController : BaseApiController
         return NoContent();
     }
 
+    [HttpPut("{id:int}/password")]
+    public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetUsuarioPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new ResetUsuarioPassword(id, request.NuevaContrasena), cancellationToken);
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {

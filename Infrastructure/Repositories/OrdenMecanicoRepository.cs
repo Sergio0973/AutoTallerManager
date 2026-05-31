@@ -26,6 +26,34 @@ public sealed class OrdenMecanicoRepository : IOrdenMecanicoRepository
     public async Task<IReadOnlyList<OrdenMecanico>> GetByMecanicoIdAsync(int mecanicoId, CancellationToken ct = default) =>
         await _context.OrdenesMecanicos.Where(x => x.MecanicoId == mecanicoId).OrderBy(x => x.Id).ToListAsync(ct);
 
+    public async Task<bool> HasActiveAssignmentForMecanicoAsync(int mecanicoId, int? excludeOrdenId = null, CancellationToken ct = default)
+    {
+        var estados = await _context.EstadosOrden
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        var terminalIds = estados
+            .Where(e =>
+                string.Equals(e.Nombre.Value, "Completada", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(e.Nombre.Value, "Cancelada", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Id)
+            .ToArray();
+
+        var query =
+            from asignacion in _context.OrdenesMecanicos
+            join orden in _context.OrdenesServicio on asignacion.OrdenId equals orden.Id
+            where asignacion.MecanicoId == mecanicoId
+                && !terminalIds.Contains(orden.EstadoId)
+            select asignacion;
+
+        if (excludeOrdenId.HasValue)
+        {
+            query = query.Where(x => x.OrdenId != excludeOrdenId.Value);
+        }
+
+        return await query.AnyAsync(ct);
+    }
+
     public async Task AddAsync(OrdenMecanico ordenMecanico, CancellationToken ct = default) =>
         await _context.OrdenesMecanicos.AddAsync(ordenMecanico, ct);
 

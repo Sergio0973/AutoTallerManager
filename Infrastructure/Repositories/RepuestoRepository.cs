@@ -30,29 +30,32 @@ public sealed class RepuestoRepository : IRepuestoRepository
         return await _context.Repuestos.ToListAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Repuesto>> GetPagedAsync(int pageNumber, int pageSize, string? search = null, int? categoriaId = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Repuesto>> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        string? search = null,
+        int? categoriaId = null,
+        int? stockMinimo = null,
+        bool? soloBajoStock = null,
+        CancellationToken ct = default)
     {
-        var query = _context.Repuestos.AsQueryable();
-
-        if (categoriaId.HasValue)
-        {
-            query = query.Where(r => r.CategoriaId == categoriaId.Value);
-        }
+        var query = ApplyFilters(_context.Repuestos.AsQueryable(), search, categoriaId, stockMinimo, soloBajoStock);
 
         return await query
+            .OrderBy(r => r.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
     }
 
-    public async Task<int> CountAsync(string? search = null, int? categoriaId = null, CancellationToken ct = default)
+    public async Task<int> CountAsync(
+        string? search = null,
+        int? categoriaId = null,
+        int? stockMinimo = null,
+        bool? soloBajoStock = null,
+        CancellationToken ct = default)
     {
-        var query = _context.Repuestos.AsQueryable();
-
-        if (categoriaId.HasValue)
-        {
-            query = query.Where(r => r.CategoriaId == categoriaId.Value);
-        }
+        var query = ApplyFilters(_context.Repuestos.AsQueryable(), search, categoriaId, stockMinimo, soloBajoStock);
 
         return await query.CountAsync(ct);
     }
@@ -85,5 +88,38 @@ public sealed class RepuestoRepository : IRepuestoRepository
             || await _context.DetallesCompra.AnyAsync(d => d.RepuestoId == id, ct)
             || await _context.RepuestosProveedor.AnyAsync(r => r.RepuestoId == id, ct)
             || await _context.LogsInventario.AnyAsync(l => l.RepuestoId == id, ct);
+    }
+
+    private static IQueryable<Repuesto> ApplyFilters(
+        IQueryable<Repuesto> query,
+        string? search,
+        int? categoriaId,
+        int? stockMinimo,
+        bool? soloBajoStock)
+    {
+        if (categoriaId.HasValue)
+        {
+            query = query.Where(r => r.CategoriaId == categoriaId.Value);
+        }
+
+        if (stockMinimo.HasValue)
+        {
+            query = query.Where(r => r.StockActual <= stockMinimo.Value);
+        }
+
+        if (soloBajoStock == true)
+        {
+            query = query.Where(r => r.StockActual <= r.StockMinimo);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToUpperInvariant();
+            query = query.Where(r =>
+                r.Codigo.Value.ToUpper().Contains(term) ||
+                r.Descripcion.Value.ToUpper().Contains(term));
+        }
+
+        return query;
     }
 }

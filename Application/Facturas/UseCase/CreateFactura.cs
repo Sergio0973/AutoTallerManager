@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Domain.Entities;
 using Domain.ValueObjects.Facturas;
 using FluentValidation;
@@ -40,8 +41,10 @@ public sealed class CreateFacturaHandler : IRequestHandler<CreateFactura, int>
 
     public async Task<int> Handle(CreateFactura request, CancellationToken cancellationToken)
     {
-        _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
+        var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureCanBeFacturadaAsync(_uow, orden, cancellationToken);
 
         _ = await _uow.EstadosFactura.GetByIdAsync(request.EstadoFacturaId, cancellationToken)
             ?? throw new KeyNotFoundException("Estado de factura no encontrado.");

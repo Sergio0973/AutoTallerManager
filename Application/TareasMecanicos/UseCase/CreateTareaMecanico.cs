@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Application.Common.Orders;
 using Application.Common.Security;
 using Domain.Entities;
 using Domain.ValueObjects.TareaMecanicos;
@@ -43,8 +44,10 @@ public sealed class CreateTareaMecanicoHandler : IRequestHandler<CreateTareaMeca
 
     public async Task<int> Handle(CreateTareaMecanico request, CancellationToken cancellationToken)
     {
-        _ = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
+        var orden = await _uow.OrdenesServicio.GetByIdAsync(request.OrdenId, cancellationToken)
             ?? throw new KeyNotFoundException("Orden de servicio no encontrada.");
+
+        await OrdenEstadoGuard.EnsureEditableAsync(_uow, orden, cancellationToken);
 
         await UserRoleGuard.EnsureMecanicoAsync(_uow, request.MecanicoId, cancellationToken);
 

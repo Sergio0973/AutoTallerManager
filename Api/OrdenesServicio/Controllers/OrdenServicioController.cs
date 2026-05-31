@@ -28,6 +28,10 @@ public sealed class OrdenServicioController : BaseApiController
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null,
         [FromQuery] int? estadoId = null,
+        [FromQuery] int? vehiculoId = null,
+        [FromQuery] int? recepcionistaId = null,
+        [FromQuery] DateOnly? fechaIngresoDesde = null,
+        [FromQuery] DateOnly? fechaIngresoHasta = null,
         CancellationToken cancellationToken = default)
     {
         if (pageNumber <= 0 || pageSize <= 0)
@@ -35,8 +39,31 @@ public sealed class OrdenServicioController : BaseApiController
             return BadRequest(new { message = "pageNumber y pageSize deben ser mayores a cero." });
         }
 
-        var total = await _uow.OrdenesServicio.CountAsync(search, estadoId, cancellationToken);
-        var ordenes = await _uow.OrdenesServicio.GetPagedAsync(pageNumber, pageSize, search, estadoId, cancellationToken);
+        if (fechaIngresoDesde.HasValue && fechaIngresoHasta.HasValue && fechaIngresoDesde > fechaIngresoHasta)
+        {
+            return BadRequest(new { message = "fechaIngresoDesde no puede ser mayor que fechaIngresoHasta." });
+        }
+
+        var total = await _uow.OrdenesServicio.CountAsync(
+            search,
+            estadoId,
+            vehiculoId,
+            recepcionistaId,
+            fechaIngresoDesde,
+            fechaIngresoHasta,
+            cancellationToken);
+
+        var ordenes = await _uow.OrdenesServicio.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            search,
+            estadoId,
+            vehiculoId,
+            recepcionistaId,
+            fechaIngresoDesde,
+            fechaIngresoHasta,
+            cancellationToken);
+
         Response.Headers["X-Total-Count"] = total.ToString();
 
         return Ok(ordenes.Select(Map).ToList());

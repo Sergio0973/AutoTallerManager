@@ -46,6 +46,11 @@ public sealed class CreateCitaHandler : IRequestHandler<CreateCita, int>
         _ = await _uow.TiposServicio.GetByIdAsync(request.TipoServicioId, cancellationToken)
             ?? throw new KeyNotFoundException("Tipo de servicio no encontrado.");
 
+        if (await _uow.OrdenesServicio.HasActiveOrderForVehiculoAsync(request.VehiculoId, cancellationToken))
+        {
+            throw new InvalidOperationException("El vehiculo ya tiene una orden de servicio activa.");
+        }
+
         if (await _uow.Citas.ExistsOverlapAsync(request.VehiculoId, request.FechaCita, request.HoraInicio, request.HoraFin, null, cancellationToken))
         {
             throw new InvalidOperationException("El vehiculo ya tiene una cita en ese horario.");
