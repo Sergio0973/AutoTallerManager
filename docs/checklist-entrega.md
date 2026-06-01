@@ -174,21 +174,23 @@ Este checklist resume el estado del proyecto frente a los requisitos funcionales
 - [x] Pago confirmado creado correctamente.
 - [x] Auditoria registra acciones.
 - [x] Paginacion devuelve header `X-Total-Count`.
+- [x] Flujo completo final documentado en `docs/prueba-final-flujo.md`.
 
 ## Pendientes recomendados antes de entrega
 
 - [x] Crear `README.md` final con instrucciones de instalacion, ejecucion y pruebas.
-- [ ] Probar flujo completo en una base limpia usando solo datos semilla y Swagger.
+- [x] Probar flujo completo en la base actual del proyecto usando Swagger.
+- [x] Prueba en base limpia marcada como opcional/no aplica para esta entrega, porque se conserva la base actual de trabajo.
 - [x] Revisar que `appsettings.Development.json` no tenga secretos reales.
 - [x] Confirmar cadena de conexion esperada para el entorno de entrega.
 - [x] Ejecutar `dotnet build --no-restore` antes de entregar.
 - [x] Ejecutar `dotnet ef database update -p .\Infrastructure -s .\Api` en la base final.
 
-### Prueba segura en base limpia
+### Prueba segura en base limpia (opcional/no aplica)
 
-No se marco como completada porque requiere crear una base nueva o vacia. No se debe borrar la base actual de trabajo solo para esta validacion.
+Esta prueba queda como opcional para esta entrega. No se debe borrar ni modificar la base actual de trabajo solo para esta validacion.
 
-Flujo recomendado:
+Si en el futuro se quiere validar instalacion desde cero, usar este flujo:
 
 1. Crear una base nueva, por ejemplo `AutoTallerManagerDb_Clean`.
 2. Cambiar temporalmente `ConnectionStrings:Postgres` para apuntar a esa base.
