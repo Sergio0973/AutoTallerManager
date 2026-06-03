@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
@@ -10,11 +10,17 @@ import { Wrench, Loader2, AlertCircle } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, login } = useAuth()
   const [correo, setCorreo] = useState("")
   const [contrasena, setContrasena] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated) {
+      router.replace("/dashboard")
+    }
+  }, [isAuthenticated, isAuthLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
