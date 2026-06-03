@@ -3,6 +3,7 @@ using Domain.Entities;
 using Domain.ValueObjects.Vehiculos;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Infrastructure.Repositories;
 
@@ -48,7 +49,8 @@ public sealed class VehiculoRepository : IVehiculoRepository
         string? placa = null,
         CancellationToken ct = default)
     {
-        var query = ApplyFilters(_context.Vehiculos.AsQueryable(), search, clienteId, vin, placa);
+        var query = CreateStringFilterQuery(search, vin, placa);
+        query = ApplyFilters(query, clienteId);
 
         return await query
             .OrderBy(v => v.Id)
@@ -64,7 +66,8 @@ public sealed class VehiculoRepository : IVehiculoRepository
         string? placa = null,
         CancellationToken ct = default)
     {
-        var query = ApplyFilters(_context.Vehiculos.AsQueryable(), search, clienteId, vin, placa);
+        var query = CreateStringFilterQuery(search, vin, placa);
+        query = ApplyFilters(query, clienteId);
         return await query.CountAsync(ct);
     }
 
@@ -102,37 +105,48 @@ public sealed class VehiculoRepository : IVehiculoRepository
             || await _context.HistorialesKilometraje.AnyAsync(h => h.VehiculoId == id, ct);
     }
 
+    private IQueryable<Vehiculo> CreateStringFilterQuery(string? search, string? vin, string? placa)
+    {
+        var hasSearch = !string.IsNullOrWhiteSpace(search);
+        var hasVin = !string.IsNullOrWhiteSpace(vin);
+        var hasPlaca = !string.IsNullOrWhiteSpace(placa);
+
+        if (!hasSearch && !hasVin && !hasPlaca)
+        {
+            return _context.Vehiculos.AsQueryable();
+        }
+
+        var sql = "SELECT * FROM \"Vehiculos\" WHERE 1 = 1";
+        var parameters = new List<NpgsqlParameter>();
+
+        if (hasVin)
+        {
+            sql += " AND upper(\"Vin\") LIKE @vin";
+            parameters.Add(new NpgsqlParameter("vin", $"%{vin!.Trim().ToUpperInvariant()}%"));
+        }
+
+        if (hasPlaca)
+        {
+            sql += " AND upper(\"Placa\") LIKE @placa";
+            parameters.Add(new NpgsqlParameter("placa", $"%{placa!.Trim().ToUpperInvariant()}%"));
+        }
+
+        if (hasSearch)
+        {
+            sql += " AND (upper(\"Vin\") LIKE @search OR upper(\"Placa\") LIKE @search OR upper(\"Color\") LIKE @search)";
+            parameters.Add(new NpgsqlParameter("search", $"%{search!.Trim().ToUpperInvariant()}%"));
+        }
+
+        return _context.Vehiculos.FromSqlRaw(sql, parameters.ToArray());
+    }
+
     private static IQueryable<Vehiculo> ApplyFilters(
         IQueryable<Vehiculo> query,
-        string? search,
-        int? clienteId,
-        string? vin,
-        string? placa)
+        int? clienteId)
     {
         if (clienteId.HasValue)
         {
             query = query.Where(v => v.ClienteId == clienteId.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(vin))
-        {
-            var normalizedVin = vin.Trim().ToUpperInvariant();
-            query = query.Where(v => v.Vin.Value.Contains(normalizedVin));
-        }
-
-        if (!string.IsNullOrWhiteSpace(placa))
-        {
-            var normalizedPlaca = placa.Trim().ToUpperInvariant();
-            query = query.Where(v => v.Placa.Value.Contains(normalizedPlaca));
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim().ToUpperInvariant();
-            query = query.Where(v =>
-                v.Vin.Value.Contains(term) ||
-                v.Placa.Value.Contains(term) ||
-                v.Color.Value.ToUpper().Contains(term));
         }
 
         return query;

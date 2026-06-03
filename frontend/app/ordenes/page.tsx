@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -135,6 +136,12 @@ const estadoConfig: Record<string, { color: string; icon: typeof Clock }> = {
   "En proceso": { color: "bg-primary/20 text-primary", icon: Wrench },
   Completada: { color: "bg-success/20 text-success", icon: CheckCircle },
   Cancelada: { color: "bg-destructive/20 text-destructive", icon: XCircle },
+  RECIBIDA: { color: "bg-warning/20 text-warning", icon: Clock },
+  DIAGNOSTICO: { color: "bg-primary/20 text-primary", icon: AlertCircle },
+  REPARACION: { color: "bg-primary/20 text-primary", icon: Wrench },
+  LISTA: { color: "bg-success/20 text-success", icon: CheckCircle },
+  ENTREGADA: { color: "bg-success/20 text-success", icon: CheckCircle },
+  CANCELADA: { color: "bg-destructive/20 text-destructive", icon: XCircle },
 }
 
 interface OrdenForm {
@@ -147,7 +154,7 @@ interface OrdenForm {
 }
 
 export default function OrdenesPage() {
-  const { user } = useAuth()
+  const { user, hasRole } = useAuth()
   const [ordenes, setOrdenes] = useState<OrdenServicio[]>([])
   const [estados, setEstados] = useState<EstadoOrden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
@@ -158,6 +165,7 @@ export default function OrdenesPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedOrden, setSelectedOrden] = useState<OrdenServicio | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
@@ -180,11 +188,37 @@ export default function OrdenesPage() {
     estado: estadosData.find((item) => item.id === orden.estadoId),
   })
 
+  const getEstadoNombre = (orden: OrdenServicio) =>
+    orden.estado?.nombre ||
+    estados.find((estado) => estado.id === orden.estadoId)?.nombre ||
+    `Estado ${orden.estadoId}`
+
+  const getEstadoConfig = (nombre: string) =>
+    estadoConfig[nombre] || estadoConfig[nombre.toUpperCase()] || estadoConfig.Pendiente
+
+  const isEstadoTerminalNombre = (nombre: string) => {
+    const normalized = nombre.toLowerCase()
+    return (
+      normalized.includes("complet") ||
+      normalized.includes("entreg") ||
+      normalized.includes("cancel") ||
+      normalized === "lista"
+    )
+  }
+
+  const isEstadoTerminal = (orden: OrdenServicio) => {
+    return isEstadoTerminalNombre(getEstadoNombre(orden))
+  }
+
+  const estadosDisponiblesParaEdicion = estados.filter(
+    (estado) => hasRole("Admin") || !isEstadoTerminalNombre(estado.nombre)
+  )
+
   const loadOrdenes = async () => {
     setIsLoading(true)
     try {
       const [clientesResponse, marcasResponse, modelosResponse, vehiculosResponse, estadosResponse, ordenesResponse] =
-        await Promise.all([
+        await Promise.allSettled([
           clienteService.getAll({ pageNumber: 1, pageSize: 100 }),
           vehiculoService.getMarcas(),
           vehiculoService.getModelos(),
@@ -193,13 +227,20 @@ export default function OrdenesPage() {
           ordenService.getAll({ pageNumber: 1, pageSize: 100 }),
         ])
 
-      const vehiculosData = vehiculosResponse.data.map((vehiculo) => {
-        const modelo = modelosResponse.find((item) => item.id === vehiculo.modeloId)
-        const marca = marcasResponse.find((item) => item.id === modelo?.marcaId)
+      const clientesData = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
+      const marcasData = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
+      const modelosData = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
+      const vehiculosBase = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
+      const estadosData = estadosResponse.status === "fulfilled" ? estadosResponse.value : []
+      const ordenesData = ordenesResponse.status === "fulfilled" ? ordenesResponse.value.data : []
+
+      const vehiculosData = vehiculosBase.map((vehiculo) => {
+        const modelo = modelosData.find((item) => item.id === vehiculo.modeloId)
+        const marca = marcasData.find((item) => item.id === modelo?.marcaId)
 
         return {
           ...vehiculo,
-          cliente: clientesResponse.data.find((item) => item.id === vehiculo.clienteId),
+          cliente: clientesData.find((item) => item.id === vehiculo.clienteId),
           modelo,
           marca,
           marcaId: modelo?.marcaId || vehiculo.marcaId || 0,
@@ -207,10 +248,10 @@ export default function OrdenesPage() {
       })
 
       setVehiculos(vehiculosData)
-      setEstados(estadosResponse)
+      setEstados(estadosData)
       setOrdenes(
-        ordenesResponse.data.map((orden) =>
-          enrichOrden(orden, vehiculosData, estadosResponse)
+        ordenesData.map((orden) =>
+          enrichOrden(orden, vehiculosData, estadosData)
         )
       )
     } finally {
@@ -223,14 +264,15 @@ export default function OrdenesPage() {
   }, [])
 
   const filteredOrdenes = ordenes.filter((orden) => {
+    const text = searchTerm.toLowerCase()
     const matchesSearch =
-      orden.vehiculo?.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      orden.vehiculo?.cliente?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      orden.vehiculo?.cliente?.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      orden.descripcionProblema.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (orden.vehiculo?.placa || "").toLowerCase().includes(text) ||
+      (orden.vehiculo?.cliente?.nombre || "").toLowerCase().includes(text) ||
+      (orden.vehiculo?.cliente?.apellido || "").toLowerCase().includes(text) ||
+      (orden.descripcionProblema || "").toLowerCase().includes(text) ||
       orden.id.toString().includes(searchTerm)
     
-    const matchesEstado = filterEstado === "all" || orden.estado?.nombre === filterEstado
+    const matchesEstado = filterEstado === "all" || getEstadoNombre(orden) === filterEstado
 
     return matchesSearch && matchesEstado
   })
@@ -243,12 +285,22 @@ export default function OrdenesPage() {
 
   const ordenesStats = {
     total: ordenes.length,
-    pendientes: ordenes.filter((o) => o.estado?.nombre?.toLowerCase().includes("recib") || o.estado?.nombre?.toLowerCase().includes("pend")).length,
-    enProceso: ordenes.filter((o) => o.estado?.nombre?.toLowerCase().includes("diagn") || o.estado?.nombre?.toLowerCase().includes("repar")).length,
-    completadas: ordenes.filter((o) => o.estado?.nombre?.toLowerCase().includes("lista") || o.estado?.nombre?.toLowerCase().includes("complet")).length,
+    pendientes: ordenes.filter((o) => {
+      const nombre = getEstadoNombre(o).toLowerCase()
+      return nombre.includes("recib") || nombre.includes("pend")
+    }).length,
+    enProceso: ordenes.filter((o) => {
+      const nombre = getEstadoNombre(o).toLowerCase()
+      return nombre.includes("diagn") || nombre.includes("repar") || nombre.includes("proceso")
+    }).length,
+    completadas: ordenes.filter((o) => {
+      const nombre = getEstadoNombre(o).toLowerCase()
+      return nombre.includes("lista") || nombre.includes("complet") || nombre.includes("entreg")
+    }).length,
   }
 
   const handleCreate = () => {
+    setErrorMessage("")
     setFormData({
       vehiculoId: 0,
       descripcionProblema: "",
@@ -266,6 +318,7 @@ export default function OrdenesPage() {
   }
 
   const handleEdit = (orden: OrdenServicio) => {
+    setErrorMessage("")
     setSelectedOrden(orden)
     setFormData({
       vehiculoId: orden.vehiculoId,
@@ -280,6 +333,7 @@ export default function OrdenesPage() {
 
   const handleSaveCreate = async () => {
     setIsLoading(true)
+    setErrorMessage("")
     try {
       const estadoInicial = estados[0]
       const newOrden = await ordenService.create({
@@ -295,6 +349,8 @@ export default function OrdenesPage() {
       })
       setOrdenes([enrichOrden(newOrden), ...ordenes])
       setIsCreateOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la orden.")
     } finally {
       setIsLoading(false)
     }
@@ -303,24 +359,30 @@ export default function OrdenesPage() {
   const handleSaveEdit = async () => {
     if (!selectedOrden) return
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    setErrorMessage("")
+    try {
+      const updatedOrden = await ordenService.updateFull(selectedOrden.id, {
+        vehiculoId: formData.vehiculoId,
+        recepcionistaId: user?.id || 0,
+        estadoId: formData.estadoId,
+        citaId: selectedOrden.citaId ?? null,
+        kilometrajeIngreso: formData.kilometrajeIngreso,
+        fechaEstimada: formData.fechaEstimadaEntrega || undefined,
+        fechaEntregaReal: selectedOrden.fechaEntregaReal || null,
+        observaciones: formData.descripcionProblema,
+      })
 
-    setOrdenes(
-      ordenes.map((o) =>
-        o.id === selectedOrden.id
-          ? {
-              ...o,
-              descripcionProblema: formData.descripcionProblema,
-              diagnostico: formData.diagnostico || undefined,
-              fechaEstimadaEntrega: formData.fechaEstimadaEntrega ? new Date(formData.fechaEstimadaEntrega).toISOString() : undefined,
-              estadoId: formData.estadoId,
-              estado: estados.find((e) => e.id === formData.estadoId),
-            }
-          : o
+      setOrdenes(
+        ordenes.map((o) =>
+          o.id === selectedOrden.id ? enrichOrden(updatedOrden) : o
+        )
       )
-    )
-    setIsEditOpen(false)
-    setIsLoading(false)
+      setIsEditOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar la orden.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const formatDate = (dateString?: string) => {
@@ -457,8 +519,9 @@ export default function OrdenesPage() {
                   </TableRow>
                 ) : (
                   paginatedOrdenes.map((orden) => {
-                    const config = estadoConfig[orden.estado?.nombre || "Pendiente"]
-                    const StatusIcon = config?.icon || AlertCircle
+                    const estadoNombre = getEstadoNombre(orden)
+                    const config = getEstadoConfig(estadoNombre)
+                    const StatusIcon = config.icon
                     return (
                       <TableRow key={orden.id} className="border-border">
                         <TableCell>
@@ -493,9 +556,9 @@ export default function OrdenesPage() {
                           {formatShortDate(orden.fechaIngreso)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${config?.color} flex items-center gap-1 w-fit`}>
+                          <Badge className={`${config.color} flex items-center gap-1 w-fit`}>
                             <StatusIcon className="w-3 h-3" />
-                            {orden.estado?.nombre}
+                            {estadoNombre}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -510,7 +573,7 @@ export default function OrdenesPage() {
                                 <Eye className="w-4 h-4 mr-2" />
                                 Ver detalles
                               </DropdownMenuItem>
-                              {orden.estado?.nombre !== "Completada" && orden.estado?.nombre !== "Cancelada" && (
+                              {!isEstadoTerminal(orden) && (
                                 <DropdownMenuItem onClick={() => handleEdit(orden)}>
                                   <Pencil className="w-4 h-4 mr-2" />
                                   Editar
@@ -571,6 +634,11 @@ export default function OrdenesPage() {
           <DialogHeader>
             <DialogTitle>Nueva Orden de Servicio</DialogTitle>
           </DialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Vehículo</label>
@@ -655,6 +723,11 @@ export default function OrdenesPage() {
           <DialogHeader>
             <DialogTitle>Editar Orden ORD-{selectedOrden?.id.toString().padStart(3, "0")}</DialogTitle>
           </DialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Estado</label>
@@ -668,7 +741,7 @@ export default function OrdenesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {estados.map((estado) => (
+                  {estadosDisponiblesParaEdicion.map((estado) => (
                     <SelectItem key={estado.id} value={estado.id.toString()}>
                       {estado.nombre}
                     </SelectItem>
@@ -732,8 +805,8 @@ export default function OrdenesPage() {
               </TabsList>
               <TabsContent value="general" className="space-y-4 pt-4">
                 <div className="flex items-center justify-between">
-                  <Badge className={estadoConfig[selectedOrden.estado?.nombre || "Pendiente"]?.color}>
-                    {selectedOrden.estado?.nombre}
+                  <Badge className={getEstadoConfig(getEstadoNombre(selectedOrden)).color}>
+                    {getEstadoNombre(selectedOrden)}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
                     Ingreso: {formatDate(selectedOrden.fechaIngreso)}
@@ -815,7 +888,7 @@ export default function OrdenesPage() {
             <Button variant="outline" onClick={() => setIsViewOpen(false)}>
               Cerrar
             </Button>
-            {selectedOrden?.estado?.nombre !== "Completada" && selectedOrden?.estado?.nombre !== "Cancelada" && (
+            {selectedOrden && !isEstadoTerminal(selectedOrden) && (
               <Button
                 onClick={() => {
                   setIsViewOpen(false)

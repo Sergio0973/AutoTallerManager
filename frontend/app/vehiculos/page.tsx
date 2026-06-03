@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -178,6 +179,7 @@ export default function VehiculosPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedVehiculo, setSelectedVehiculo] = useState<Vehiculo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedMarcaId, setSelectedMarcaId] = useState<number | null>(null)
   const pageSize = 10
@@ -214,19 +216,24 @@ export default function VehiculosPage() {
   const loadVehiculos = async () => {
     setIsLoading(true)
     try {
-      const [clientesResponse, marcasResponse, modelosResponse, vehiculosResponse] = await Promise.all([
+      const [clientesResponse, marcasResponse, modelosResponse, vehiculosResponse] = await Promise.allSettled([
         clienteService.getAll({ pageNumber: 1, pageSize: 100 }),
         vehiculoService.getMarcas(),
         vehiculoService.getModelos(),
         vehiculoService.getAll({ pageNumber: 1, pageSize: 100 }),
       ])
 
-      setClientes(clientesResponse.data)
-      setMarcas(marcasResponse)
-      setModelos(modelosResponse)
+      const clientesData = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
+      const marcasData = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
+      const modelosData = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
+      const vehiculosData = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
+
+      setClientes(clientesData)
+      setMarcas(marcasData)
+      setModelos(modelosData)
       setVehiculos(
-        vehiculosResponse.data.map((vehiculo) =>
-          enrichVehiculo(vehiculo, clientesResponse.data, marcasResponse, modelosResponse)
+        vehiculosData.map((vehiculo) =>
+          enrichVehiculo(vehiculo, clientesData, marcasData, modelosData)
         )
       )
     } finally {
@@ -238,14 +245,16 @@ export default function VehiculosPage() {
     loadVehiculos()
   }, [])
 
-  const filteredVehiculos = vehiculos.filter(
-    (v) =>
-      v.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.cliente?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.cliente?.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.marca?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.modelo?.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredVehiculos = vehiculos.filter((v) => {
+    const text = searchTerm.toLowerCase()
+    return (
+      (v.placa || "").toLowerCase().includes(text) ||
+      (v.cliente?.nombre || "").toLowerCase().includes(text) ||
+      (v.cliente?.apellido || "").toLowerCase().includes(text) ||
+      (v.marca?.nombre || "").toLowerCase().includes(text) ||
+      (v.modelo?.nombre || "").toLowerCase().includes(text)
+    )
+  })
 
   const totalPages = Math.ceil(filteredVehiculos.length / pageSize)
   const paginatedVehiculos = filteredVehiculos.slice(
@@ -258,6 +267,7 @@ export default function VehiculosPage() {
     : modelos
 
   const handleCreate = () => {
+    setErrorMessage("")
     setFormData({
       placa: "",
       vin: "",
@@ -273,16 +283,19 @@ export default function VehiculosPage() {
   }
 
   const handleEdit = (vehiculo: Vehiculo) => {
+    setErrorMessage("")
+    const modelo = modelos.find((item) => item.id === vehiculo.modeloId) || vehiculo.modelo
+    const marcaId = modelo?.marcaId || vehiculo.marcaId || 0
     setSelectedVehiculo(vehiculo)
-    setSelectedMarcaId(vehiculo.marcaId)
+    setSelectedMarcaId(marcaId || null)
     setFormData({
-      placa: vehiculo.placa,
+      placa: vehiculo.placa || "",
       vin: vehiculo.vin || "",
       color: vehiculo.color || "",
       anio: vehiculo.anio,
       kilometraje: vehiculo.kilometraje,
       clienteId: vehiculo.clienteId,
-      marcaId: vehiculo.marcaId,
+      marcaId,
       modeloId: vehiculo.modeloId,
     })
     setIsEditOpen(true)
@@ -294,16 +307,25 @@ export default function VehiculosPage() {
   }
 
   const handleDeleteClick = (vehiculo: Vehiculo) => {
+    setErrorMessage("")
     setSelectedVehiculo(vehiculo)
     setIsDeleteOpen(true)
   }
 
   const handleSaveCreate = async () => {
+    if (formData.vin.trim().length !== 17) {
+      setErrorMessage("El VIN es obligatorio y debe tener exactamente 17 caracteres.")
+      return
+    }
+
     setIsLoading(true)
+    setErrorMessage("")
     try {
       const newVehiculo = await vehiculoService.create(formData)
       setVehiculos([...vehiculos, enrichVehiculo(newVehiculo)])
       setIsCreateOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo crear el vehiculo.")
     } finally {
       setIsLoading(false)
     }
@@ -311,7 +333,13 @@ export default function VehiculosPage() {
 
   const handleSaveEdit = async () => {
     if (!selectedVehiculo) return
+    if (formData.vin.trim().length !== 17) {
+      setErrorMessage("El VIN es obligatorio y debe tener exactamente 17 caracteres.")
+      return
+    }
+
     setIsLoading(true)
+    setErrorMessage("")
     try {
       const updatedVehiculo = await vehiculoService.update(selectedVehiculo.id, formData)
       setVehiculos(
@@ -320,6 +348,8 @@ export default function VehiculosPage() {
         )
       )
       setIsEditOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar el vehiculo.")
     } finally {
       setIsLoading(false)
     }
@@ -328,10 +358,13 @@ export default function VehiculosPage() {
   const handleDelete = async () => {
     if (!selectedVehiculo) return
     setIsLoading(true)
+    setErrorMessage("")
     try {
       await vehiculoService.delete(selectedVehiculo.id)
       setVehiculos(vehiculos.filter((v) => v.id !== selectedVehiculo.id))
       setIsDeleteOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo eliminar el vehiculo.")
     } finally {
       setIsLoading(false)
     }
@@ -570,6 +603,11 @@ export default function VehiculosPage() {
               {isCreateOpen ? "Nuevo Vehículo" : "Editar Vehículo"}
             </DialogTitle>
           </DialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Propietario</label>
@@ -687,15 +725,19 @@ export default function VehiculosPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">VIN (opcional)</label>
+              <label className="text-sm font-medium">VIN</label>
               <Input
+                maxLength={17}
                 value={formData.vin}
                 onChange={(e) =>
                   setFormData({ ...formData, vin: e.target.value.toUpperCase() })
                 }
-                placeholder="Número de identificación vehicular"
+                placeholder="17 caracteres del VIN"
                 className="bg-secondary border-border font-mono"
               />
+              <p className="text-xs text-muted-foreground">
+                {formData.vin.length}/17 caracteres
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -707,7 +749,14 @@ export default function VehiculosPage() {
             </Button>
             <Button
               onClick={isCreateOpen ? handleSaveCreate : handleSaveEdit}
-              disabled={isLoading || !formData.placa || !formData.clienteId || !formData.marcaId || !formData.modeloId}
+              disabled={
+                isLoading ||
+                !formData.placa ||
+                !formData.clienteId ||
+                !formData.marcaId ||
+                !formData.modeloId ||
+                formData.vin.trim().length !== 17
+              }
               className="bg-primary text-primary-foreground"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -810,6 +859,11 @@ export default function VehiculosPage() {
               .
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction

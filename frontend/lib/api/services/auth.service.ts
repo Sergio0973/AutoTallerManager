@@ -51,15 +51,22 @@ export const authService = {
    * Obtener datos del usuario actual desde cookies
    */
   getCurrentUser() {
-    const userStr = Cookies.get("user")
-    if (userStr) {
-      try {
-        return JSON.parse(userStr)
-      } catch {
+    if (typeof window === "undefined") {
+      return null
+    }
+
+    try {
+      const userStr = Cookies.get("user")
+      if (!userStr) {
         return null
       }
+
+      return JSON.parse(userStr)
+    } catch {
+      Cookies.remove("auth_token")
+      Cookies.remove("user")
+      return null
     }
-    return null
   },
 
   /**

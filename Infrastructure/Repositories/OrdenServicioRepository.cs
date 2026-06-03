@@ -2,6 +2,7 @@ using Application.Abstractions;
 using Domain.Entities;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Infrastructure.Repositories;
 
@@ -40,9 +41,9 @@ public sealed class OrdenServicioRepository : IOrdenServicioRepository
         DateOnly? fechaIngresoHasta = null,
         CancellationToken ct = default)
     {
-        var query = ApplyFilters(
-            _context.OrdenesServicio.AsQueryable(),
-            search,
+        var query = CreateSearchQuery(search);
+        query = ApplyFilters(
+            query,
             estadoId,
             vehiculoId,
             recepcionistaId,
@@ -66,9 +67,9 @@ public sealed class OrdenServicioRepository : IOrdenServicioRepository
         DateOnly? fechaIngresoHasta = null,
         CancellationToken ct = default)
     {
-        var query = ApplyFilters(
-            _context.OrdenesServicio.AsQueryable(),
-            search,
+        var query = CreateSearchQuery(search);
+        query = ApplyFilters(
+            query,
             estadoId,
             vehiculoId,
             recepcionistaId,
@@ -125,9 +126,21 @@ public sealed class OrdenServicioRepository : IOrdenServicioRepository
             || await _context.LogsInventario.AnyAsync(l => l.OrdenId == id, ct);
     }
 
+    private IQueryable<OrdenServicio> CreateSearchQuery(string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return _context.OrdenesServicio.AsQueryable();
+        }
+
+        var pattern = $"%{search.Trim().ToUpperInvariant()}%";
+        return _context.OrdenesServicio.FromSqlRaw(
+            "SELECT * FROM \"OrdenesServicio\" WHERE upper(\"Observaciones\") LIKE @search",
+            new NpgsqlParameter("search", pattern));
+    }
+
     private static IQueryable<OrdenServicio> ApplyFilters(
         IQueryable<OrdenServicio> query,
-        string? search,
         int? estadoId,
         int? vehiculoId,
         int? recepcionistaId,
@@ -157,12 +170,6 @@ public sealed class OrdenServicioRepository : IOrdenServicioRepository
         if (fechaIngresoHasta.HasValue)
         {
             query = query.Where(o => o.FechaIngreso <= fechaIngresoHasta.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim().ToLower();
-            query = query.Where(o => o.Observaciones != null && o.Observaciones.Value.ToLower().Contains(term));
         }
 
         return query;

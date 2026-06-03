@@ -35,8 +35,12 @@ export interface Cliente {
   nombre: string
   apellido: string
   correo: string
+  correoId?: number
   telefono: string
+  telefonoId?: number
   direccion?: string
+  direccionId?: number
+  ciudadId?: number
   fechaRegistro: string
   activo: boolean
 }
@@ -48,6 +52,7 @@ export interface ClienteCreate {
   correo?: string
   telefono?: string
   direccion?: string
+  ciudadId?: number
 }
 
 export interface ClienteUpdate extends ClienteCreate {
@@ -174,6 +179,7 @@ export interface OrdenServicioUpdate {
 export interface EstadoOrden {
   id: number
   nombre: string // Pendiente, En proceso, Completada, Cancelada
+  descripcion?: string
 }
 
 export interface OrdenMecanico {

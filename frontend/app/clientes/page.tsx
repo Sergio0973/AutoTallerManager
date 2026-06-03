@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +119,7 @@ export default function ClientesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
@@ -129,6 +131,7 @@ export default function ClientesPage() {
     correo: "",
     telefono: "",
     direccion: "",
+    ciudadId: undefined,
   })
 
   const loadClientes = async () => {
@@ -167,6 +170,7 @@ export default function ClientesPage() {
   )
 
   const handleCreate = () => {
+    setErrorMessage("")
     setFormData({
       nombre: "",
       apellido: "",
@@ -174,11 +178,13 @@ export default function ClientesPage() {
       correo: "",
       telefono: "",
       direccion: "",
+      ciudadId: undefined,
     })
     setIsCreateOpen(true)
   }
 
   const handleEdit = (cliente: Cliente) => {
+    setErrorMessage("")
     setSelectedCliente(cliente)
     setFormData({
       nombre: cliente.nombre,
@@ -187,6 +193,7 @@ export default function ClientesPage() {
       correo: cliente.correo,
       telefono: cliente.telefono,
       direccion: cliente.direccion || "",
+      ciudadId: cliente.ciudadId,
     })
     setIsEditOpen(true)
   }
@@ -197,16 +204,20 @@ export default function ClientesPage() {
   }
 
   const handleDeleteClick = (cliente: Cliente) => {
+    setErrorMessage("")
     setSelectedCliente(cliente)
     setIsDeleteOpen(true)
   }
 
   const handleSaveCreate = async () => {
     setIsLoading(true)
+    setErrorMessage("")
     try {
       const newCliente = await clienteService.create(formData)
       setClientes([...clientes, newCliente])
       setIsCreateOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el cliente.")
     } finally {
       setIsLoading(false)
     }
@@ -215,6 +226,7 @@ export default function ClientesPage() {
   const handleSaveEdit = async () => {
     if (!selectedCliente) return
     setIsLoading(true)
+    setErrorMessage("")
     try {
       const updatedCliente = await clienteService.update(selectedCliente.id, formData)
       setClientes(
@@ -223,6 +235,8 @@ export default function ClientesPage() {
         )
       )
       setIsEditOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el cliente.")
     } finally {
       setIsLoading(false)
     }
@@ -231,10 +245,13 @@ export default function ClientesPage() {
   const handleDelete = async () => {
     if (!selectedCliente) return
     setIsLoading(true)
+    setErrorMessage("")
     try {
       await clienteService.delete(selectedCliente.id)
       setClientes(clientes.filter((c) => c.id !== selectedCliente.id))
       setIsDeleteOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo eliminar el cliente.")
     } finally {
       setIsLoading(false)
     }
@@ -351,7 +368,7 @@ export default function ClientesPage() {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Phone className="w-3 h-3" />
-                            {cliente.documento || cliente.telefono}
+                            {cliente.telefono || cliente.documento || "Sin telefono"}
                           </div>
                         </div>
                       </TableCell>
@@ -359,7 +376,7 @@ export default function ClientesPage() {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <MapPin className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate max-w-[200px]">
-                            {cliente.direccion || "No especificada"}
+                            {cliente.direccion || "Sin direccion"}
                           </span>
                         </div>
                       </TableCell>
@@ -451,6 +468,11 @@ export default function ClientesPage() {
           <DialogHeader>
             <DialogTitle>Nuevo Cliente</DialogTitle>
           </DialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -488,6 +510,17 @@ export default function ClientesPage() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Correo</label>
+              <Input
+                value={formData.correo}
+                onChange={(e) =>
+                  setFormData({ ...formData, correo: e.target.value })
+                }
+                placeholder="cliente@correo.com"
+                className="bg-secondary border-border"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Teléfono</label>
               <Input
                 value={formData.telefono}
@@ -509,6 +542,24 @@ export default function ClientesPage() {
                 className="bg-secondary border-border"
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ciudad ID</label>
+              <Input
+                type="number"
+                value={formData.ciudadId || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    ciudadId: e.target.value ? Number(e.target.value) : undefined,
+                  })
+                }
+                placeholder="Ej: 2"
+                className="bg-secondary border-border"
+              />
+              <p className="text-xs text-muted-foreground">
+                Solo es necesario si vas a guardar una direccion.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
@@ -516,7 +567,7 @@ export default function ClientesPage() {
             </Button>
             <Button
               onClick={handleSaveCreate}
-              disabled={isLoading || !formData.nombre || !formData.apellido || !formData.documento}
+              disabled={isLoading || !formData.nombre || !formData.apellido || !formData.documento || (!!formData.direccion?.trim() && !formData.ciudadId)}
               className="bg-primary text-primary-foreground"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -532,6 +583,11 @@ export default function ClientesPage() {
           <DialogHeader>
             <DialogTitle>Editar Cliente</DialogTitle>
           </DialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -569,6 +625,17 @@ export default function ClientesPage() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Correo</label>
+              <Input
+                value={formData.correo}
+                onChange={(e) =>
+                  setFormData({ ...formData, correo: e.target.value })
+                }
+                placeholder="cliente@correo.com"
+                className="bg-secondary border-border"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Teléfono</label>
               <Input
                 value={formData.telefono}
@@ -590,6 +657,24 @@ export default function ClientesPage() {
                 className="bg-secondary border-border"
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ciudad ID</label>
+              <Input
+                type="number"
+                value={formData.ciudadId || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    ciudadId: e.target.value ? Number(e.target.value) : undefined,
+                  })
+                }
+                placeholder="Ej: 2"
+                className="bg-secondary border-border"
+              />
+              <p className="text-xs text-muted-foreground">
+                Solo es necesario si vas a guardar una direccion.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
@@ -597,7 +682,7 @@ export default function ClientesPage() {
             </Button>
             <Button
               onClick={handleSaveEdit}
-              disabled={isLoading || !formData.nombre || !formData.apellido || !formData.documento}
+              disabled={isLoading || !formData.nombre || !formData.apellido || !formData.documento || (!!formData.direccion?.trim() && !formData.ciudadId)}
               className="bg-primary text-primary-foreground"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -642,11 +727,11 @@ export default function ClientesPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedCliente.documento || selectedCliente.telefono}</span>
+                  <span>{selectedCliente.telefono || "Sin telefono"}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{selectedCliente.direccion || "No especificada"}</span>
+                  <span>{selectedCliente.direccion || "Sin direccion"}</span>
                 </div>
               </div>
               <div className="pt-4 border-t border-border text-sm text-muted-foreground">
@@ -686,6 +771,11 @@ export default function ClientesPage() {
               y todos sus datos asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction

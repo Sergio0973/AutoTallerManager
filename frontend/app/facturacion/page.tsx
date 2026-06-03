@@ -40,23 +40,27 @@ export default function FacturacionPage() {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [facturasResponse, estadosResponse, metodosResponse] = await Promise.all([
+      const [facturasResponse, estadosResponse, metodosResponse] = await Promise.allSettled([
         facturacionService.getAll({ pageNumber: 1, pageSize: 100 }),
         facturacionService.getEstados(),
         facturacionService.getMetodosPago(),
       ])
 
+      const facturasData = facturasResponse.status === "fulfilled" ? facturasResponse.value.data : []
+      const estadosData = estadosResponse.status === "fulfilled" ? estadosResponse.value : []
+      const metodosData = metodosResponse.status === "fulfilled" ? metodosResponse.value : []
+
       const pagosData = (
         await Promise.all(
-          facturasResponse.data.map((factura) =>
+          facturasData.map((factura) =>
             facturacionService.getPagosByFactura(factura.id).catch(() => [])
           )
         )
       ).flat()
 
-      setFacturas(facturasResponse.data)
-      setEstados(estadosResponse)
-      setMetodosPago(metodosResponse)
+      setFacturas(facturasData)
+      setEstados(estadosData)
+      setMetodosPago(metodosData)
       setPagos(pagosData)
     } finally {
       setIsLoading(false)
@@ -70,10 +74,10 @@ export default function FacturacionPage() {
   const filteredFacturas = facturas.filter((factura) => {
     const text = searchTerm.toLowerCase()
     return (
-      factura.numero?.toLowerCase().includes(text) ||
+      (factura.numero || "").toLowerCase().includes(text) ||
       factura.id.toString().includes(text) ||
       factura.ordenId.toString().includes(text) ||
-      factura.observaciones?.toLowerCase().includes(text)
+      (factura.observaciones || "").toLowerCase().includes(text)
     )
   })
 

@@ -20,12 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Verificar si hay un usuario en las cookies al cargar
-    const currentUser = authService.getCurrentUser()
-    if (currentUser) {
-      setUser(currentUser)
+    try {
+      const currentUser = authService.getCurrentUser()
+      if (currentUser) {
+        setUser(currentUser)
+      }
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }, [])
 
   const login = useCallback(async (credentials: LoginRequest) => {

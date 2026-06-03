@@ -1,4 +1,5 @@
 import apiClient, { getTotalCount } from "../client"
+import { AxiosError } from "axios"
 import type { 
   OrdenServicio, 
   OrdenServicioCreate, 
@@ -25,6 +26,52 @@ type OrdenServicioDto = {
   fechaEstimada?: string
   fechaEntregaReal?: string | null
   observaciones?: string | null
+}
+
+const fallbackTiposServicio: TipoServicio[] = [
+  { id: 1, nombre: "Diagnostico", descripcion: "Revision inicial para identificar fallas." },
+  { id: 2, nombre: "Mantenimiento preventivo", descripcion: "Servicio programado para prevenir fallas." },
+  { id: 3, nombre: "Reparacion", descripcion: "Correccion de fallas detectadas en el vehiculo." },
+]
+
+const fallbackEstadosOrden: EstadoOrden[] = [
+  { id: 1, nombre: "RECIBIDA", descripcion: "Orden creada y pendiente de diagnostico" },
+  { id: 2, nombre: "DIAGNOSTICO", descripcion: "Vehiculo en revision tecnica" },
+  { id: 3, nombre: "REPARACION", descripcion: "Trabajo mecanico en ejecucion" },
+  { id: 4, nombre: "LISTA", descripcion: "Servicio finalizado y pendiente de entrega" },
+  { id: 5, nombre: "ENTREGADA", descripcion: "Vehiculo entregado al cliente" },
+  { id: 8, nombre: "Cancelada", descripcion: "Orden cancelada y sin posibilidad de facturacion" },
+]
+
+type OrdenServicioUpdatePayload = {
+  vehiculoId: number
+  recepcionistaId: number
+  estadoId: number
+  citaId?: number | null
+  kilometrajeIngreso: number
+  fechaEstimada?: string
+  fechaEntregaReal?: string | null
+  observaciones?: string
+}
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data
+
+    if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
+      return data.message
+    }
+
+    if (typeof data === "string" && data.trim()) {
+      return data
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallback
 }
 
 const mapOrden = (orden: OrdenServicioDto): OrdenServicio => ({
@@ -87,31 +134,56 @@ export const ordenService = {
    * Actualizar una orden existente
    */
   async update(id: number, data: OrdenServicioUpdate): Promise<OrdenServicio> {
-    const response = await apiClient.put<OrdenServicio>(`/OrdenServicio/${id}`, data)
-    return response.data
+    try {
+      await apiClient.put(`/OrdenServicio/${id}`, data)
+      return this.getById(id)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo actualizar la orden."))
+    }
+  },
+
+  async updateFull(id: number, data: OrdenServicioUpdatePayload): Promise<OrdenServicio> {
+    try {
+      await apiClient.put(`/OrdenServicio/${id}`, data)
+      return this.getById(id)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo actualizar la orden."))
+    }
   },
 
   /**
    * Eliminar una orden
    */
   async delete(id: number): Promise<void> {
-    await apiClient.delete(`/OrdenServicio/${id}`)
+    try {
+      await apiClient.delete(`/OrdenServicio/${id}`)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo eliminar la orden."))
+    }
   },
 
   /**
    * Obtener todos los estados de orden
    */
   async getEstados(): Promise<EstadoOrden[]> {
-    const response = await apiClient.get<EstadoOrden[]>("/EstadoOrden")
-    return response.data
+    try {
+      const response = await apiClient.get<EstadoOrden[]>("/EstadoOrden")
+      return response.data.length > 0 ? response.data : fallbackEstadosOrden
+    } catch {
+      return fallbackEstadosOrden
+    }
   },
 
   /**
    * Obtener tipos de servicio
    */
   async getTiposServicio(): Promise<TipoServicio[]> {
-    const response = await apiClient.get<TipoServicio[]>("/TipoServicio")
-    return response.data
+    try {
+      const response = await apiClient.get<TipoServicio[]>("/TipoServicio")
+      return response.data.length > 0 ? response.data : fallbackTiposServicio
+    } catch {
+      return fallbackTiposServicio
+    }
   },
 
   // Detalles de orden

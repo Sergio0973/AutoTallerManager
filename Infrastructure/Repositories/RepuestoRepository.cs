@@ -39,7 +39,8 @@ public sealed class RepuestoRepository : IRepuestoRepository
         bool? soloBajoStock = null,
         CancellationToken ct = default)
     {
-        var query = ApplyFilters(_context.Repuestos.AsQueryable(), search, categoriaId, stockMinimo, soloBajoStock);
+        var query = CreateSearchQuery(search);
+        query = ApplyFilters(query, categoriaId, stockMinimo, soloBajoStock);
 
         return await query
             .OrderBy(r => r.Id)
@@ -55,7 +56,8 @@ public sealed class RepuestoRepository : IRepuestoRepository
         bool? soloBajoStock = null,
         CancellationToken ct = default)
     {
-        var query = ApplyFilters(_context.Repuestos.AsQueryable(), search, categoriaId, stockMinimo, soloBajoStock);
+        var query = CreateSearchQuery(search);
+        query = ApplyFilters(query, categoriaId, stockMinimo, soloBajoStock);
 
         return await query.CountAsync(ct);
     }
@@ -90,9 +92,20 @@ public sealed class RepuestoRepository : IRepuestoRepository
             || await _context.LogsInventario.AnyAsync(l => l.RepuestoId == id, ct);
     }
 
+    private IQueryable<Repuesto> CreateSearchQuery(string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return _context.Repuestos.AsQueryable();
+        }
+
+        var pattern = $"%{search.Trim().ToUpperInvariant()}%";
+        return _context.Repuestos.FromSqlInterpolated(
+            $"SELECT * FROM \"Repuestos\" WHERE upper(\"Codigo\") LIKE {pattern} OR upper(\"Descripcion\") LIKE {pattern}");
+    }
+
     private static IQueryable<Repuesto> ApplyFilters(
         IQueryable<Repuesto> query,
-        string? search,
         int? categoriaId,
         int? stockMinimo,
         bool? soloBajoStock)
@@ -110,14 +123,6 @@ public sealed class RepuestoRepository : IRepuestoRepository
         if (soloBajoStock == true)
         {
             query = query.Where(r => r.StockActual <= r.StockMinimo);
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim().ToUpperInvariant();
-            query = query.Where(r =>
-                r.Codigo.Value.ToUpper().Contains(term) ||
-                r.Descripcion.Value.ToUpper().Contains(term));
         }
 
         return query;

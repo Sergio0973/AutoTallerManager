@@ -62,7 +62,7 @@ export default function CitasPage() {
     setIsLoading(true)
     try {
       const [clientesResponse, marcasResponse, modelosResponse, vehiculosResponse, tiposResponse, citasResponse] =
-        await Promise.all([
+        await Promise.allSettled([
           clienteService.getAll({ pageNumber: 1, pageSize: 100 }),
           vehiculoService.getMarcas(),
           vehiculoService.getModelos(),
@@ -71,12 +71,19 @@ export default function CitasPage() {
           citaService.getAll({ pageNumber: 1, pageSize: 100 }),
         ])
 
-      const vehiculosData = vehiculosResponse.data.map((vehiculo) => {
-        const modelo = modelosResponse.find((item) => item.id === vehiculo.modeloId)
-        const marca = marcasResponse.find((item) => item.id === modelo?.marcaId)
+      const clientesData = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
+      const marcasData = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
+      const modelosData = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
+      const vehiculosBase = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
+      const tiposData = tiposResponse.status === "fulfilled" ? tiposResponse.value : []
+      const citasData = citasResponse.status === "fulfilled" ? citasResponse.value.data : []
+
+      const vehiculosData = vehiculosBase.map((vehiculo) => {
+        const modelo = modelosData.find((item) => item.id === vehiculo.modeloId)
+        const marca = marcasData.find((item) => item.id === modelo?.marcaId)
         return {
           ...vehiculo,
-          cliente: clientesResponse.data.find((cliente) => cliente.id === vehiculo.clienteId),
+          cliente: clientesData.find((cliente) => cliente.id === vehiculo.clienteId),
           modelo,
           marca,
           marcaId: modelo?.marcaId || vehiculo.marcaId || 0,
@@ -84,8 +91,8 @@ export default function CitasPage() {
       })
 
       setVehiculos(vehiculosData)
-      setTiposServicio(tiposResponse)
-      setCitas(citasResponse.data.map((cita) => enrichCita(cita, vehiculosData)))
+      setTiposServicio(tiposData)
+      setCitas(citasData.map((cita) => enrichCita(cita, vehiculosData)))
     } finally {
       setIsLoading(false)
     }
@@ -98,10 +105,10 @@ export default function CitasPage() {
   const filteredCitas = citas.filter((cita) => {
     const text = searchTerm.toLowerCase()
     return (
-      cita.estado.toLowerCase().includes(text) ||
-      cita.observaciones?.toLowerCase().includes(text) ||
-      cita.vehiculo?.placa.toLowerCase().includes(text) ||
-      cita.vehiculo?.cliente?.nombre.toLowerCase().includes(text)
+      (cita.estado || "").toLowerCase().includes(text) ||
+      (cita.observaciones || "").toLowerCase().includes(text) ||
+      (cita.vehiculo?.placa || "").toLowerCase().includes(text) ||
+      (cita.vehiculo?.cliente?.nombre || "").toLowerCase().includes(text)
     )
   })
 
@@ -144,7 +151,7 @@ export default function CitasPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Programadas</p>
                 <p className="text-xl font-bold">
-                  {citas.filter((cita) => cita.estado.toLowerCase().includes("program")).length}
+                  {citas.filter((cita) => (cita.estado || "").toLowerCase().includes("program")).length}
                 </p>
               </div>
             </CardContent>
