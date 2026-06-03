@@ -101,20 +101,33 @@ export interface Modelo {
 // Tipos para Citas
 export interface Cita {
   id: number
+  vehiculoId: number
+  recepcionistaId?: number
+  tipoServicioId?: number
+  fechaCita?: string
+  horaInicio?: string
+  horaFin?: string
+  observaciones?: string
   fechaHora: string
   motivo: string
   notas?: string
-  vehiculoId: number
   vehiculo?: Vehiculo
   estado: string
   fechaCreacion: string
 }
 
 export interface CitaCreate {
-  fechaHora: string
-  motivo: string
-  notas?: string
   vehiculoId: number
+  recepcionistaId?: number
+  tipoServicioId?: number
+  fechaCita?: string
+  horaInicio?: string
+  horaFin?: string
+  estado?: string
+  observaciones?: string
+  fechaHora?: string
+  motivo?: string
+  notas?: string
 }
 
 // Tipos para Órdenes de Servicio
@@ -207,14 +220,17 @@ export interface DetalleOrdenCreate {
 // Tipos para Repuestos/Inventario
 export interface Repuesto {
   id: number
+  categoriaId: number
+  unidadId?: number
+  unidadIdMedida?: number
   codigo: string
-  nombre: string
   descripcion?: string
+  nombre: string
+  precioUnitario?: number
   precioVenta: number
   precioCosto: number
   stockActual: number
   stockMinimo: number
-  categoriaId: number
   categoria?: CategoriaRepuesto
   unidadMedidaId: number
   unidadMedida?: UnidadMedida
@@ -224,15 +240,17 @@ export interface Repuesto {
 }
 
 export interface RepuestoCreate {
+  categoriaId: number
+  unidadId?: number
+  unidadMedidaId?: number
   codigo: string
-  nombre: string
   descripcion?: string
-  precioVenta: number
+  nombre?: string
+  precioUnitario?: number
+  precioVenta?: number
   precioCosto: number
   stockActual: number
   stockMinimo: number
-  categoriaId: number
-  unidadMedidaId: number
   ubicacionId?: number
 }
 
@@ -259,20 +277,33 @@ export interface Ubicacion {
 // Tipos para Facturación
 export interface Factura {
   id: number
-  numero: string
+  numero?: string
+  ordenId: number
+  estadoFacturaId?: number
+  usuarioId?: number
+  manoDeObra?: number
+  costoRepuestos?: number
+  descuento?: number
+  impuestoPct?: number
   fechaEmision: string
   subtotal: number
-  impuesto: number
+  impuesto?: number
   total: number
-  ordenId: number
   orden?: OrdenServicio
-  estadoId: number
+  estadoId?: number
   estado?: EstadoFactura
   pagos?: Pago[]
+  observaciones?: string
 }
 
 export interface FacturaCreate {
   ordenId: number
+  estadoFacturaId?: number
+  usuarioId?: number
+  descuento?: number
+  impuestoPct?: number
+  fechaEmision?: string
+  observaciones?: string
 }
 
 export interface EstadoFactura {
@@ -282,20 +313,22 @@ export interface EstadoFactura {
 
 export interface Pago {
   id: number
+  facturaId: number
+  metodoPagoId: number
   monto: number
   fechaPago: string
   referencia?: string
-  facturaId: number
-  metodoPagoId: number
   metodoPago?: MetodoPago
   confirmado: boolean
+  estado?: string
 }
 
 export interface PagoCreate {
-  monto: number
-  referencia?: string
   facturaId: number
   metodoPagoId: number
+  monto: number
+  referencia?: string
+  estado?: string
 }
 
 export interface MetodoPago {

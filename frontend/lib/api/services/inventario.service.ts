@@ -10,14 +10,52 @@ import type {
   Ubicacion
 } from "../types"
 
+type RepuestoDto = {
+  id: number
+  categoriaId: number
+  unidadId: number
+  codigo: string
+  descripcion: string
+  stockActual: number
+  stockMinimo: number
+  precioUnitario: number
+  activo: boolean
+}
+
+const mapRepuesto = (repuesto: RepuestoDto): Repuesto => ({
+  id: repuesto.id,
+  categoriaId: repuesto.categoriaId,
+  unidadId: repuesto.unidadId,
+  unidadMedidaId: repuesto.unidadId,
+  codigo: repuesto.codigo,
+  nombre: repuesto.descripcion,
+  descripcion: repuesto.descripcion,
+  precioUnitario: repuesto.precioUnitario,
+  precioVenta: repuesto.precioUnitario,
+  precioCosto: repuesto.precioUnitario,
+  stockActual: repuesto.stockActual,
+  stockMinimo: repuesto.stockMinimo,
+  activo: repuesto.activo,
+})
+
+const mapRepuestoPayload = (data: RepuestoCreate | RepuestoUpdate) => ({
+  categoriaId: data.categoriaId,
+  unidadId: data.unidadId ?? data.unidadMedidaId,
+  codigo: data.codigo,
+  descripcion: data.descripcion || data.nombre || "",
+  stockActual: data.stockActual,
+  stockMinimo: data.stockMinimo,
+  precioUnitario: data.precioUnitario ?? data.precioVenta ?? data.precioCosto,
+})
+
 export const inventarioService = {
   /**
    * Obtener lista paginada de repuestos
    */
   async getAll(params?: RepuestoFilterParams): Promise<PaginatedResponse<Repuesto>> {
-    const response = await apiClient.get<Repuesto[]>("/Repuesto", { params })
+    const response = await apiClient.get<RepuestoDto[]>("/Repuesto", { params })
     return {
-      data: response.data,
+      data: response.data.map(mapRepuesto),
       totalCount: getTotalCount(response.headers as Record<string, string>),
       pageNumber: params?.pageNumber || 1,
       pageSize: params?.pageSize || 20,
@@ -28,24 +66,24 @@ export const inventarioService = {
    * Obtener un repuesto por ID
    */
   async getById(id: number): Promise<Repuesto> {
-    const response = await apiClient.get<Repuesto>(`/Repuesto/${id}`)
-    return response.data
+    const response = await apiClient.get<RepuestoDto>(`/Repuesto/${id}`)
+    return mapRepuesto(response.data)
   },
 
   /**
    * Crear un nuevo repuesto
    */
   async create(data: RepuestoCreate): Promise<Repuesto> {
-    const response = await apiClient.post<Repuesto>("/Repuesto", data)
-    return response.data
+    const response = await apiClient.post<RepuestoDto>("/Repuesto", mapRepuestoPayload(data))
+    return mapRepuesto(response.data)
   },
 
   /**
    * Actualizar un repuesto existente
    */
   async update(id: number, data: RepuestoUpdate): Promise<Repuesto> {
-    const response = await apiClient.put<Repuesto>(`/Repuesto/${id}`, data)
-    return response.data
+    const response = await apiClient.put<RepuestoDto>(`/Repuesto/${id}`, mapRepuestoPayload(data))
+    return mapRepuesto(response.data)
   },
 
   /**
@@ -59,10 +97,10 @@ export const inventarioService = {
    * Obtener repuestos con bajo stock
    */
   async getLowStock(): Promise<Repuesto[]> {
-    const response = await apiClient.get<Repuesto[]>("/Repuesto", {
+    const response = await apiClient.get<RepuestoDto[]>("/Repuesto", {
       params: { soloBajoStock: true }
     })
-    return response.data
+    return response.data.map(mapRepuesto)
   },
 
   /**
