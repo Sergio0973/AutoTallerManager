@@ -1,0 +1,343 @@
+// Tipos para el módulo de Autenticación
+export interface LoginRequest {
+  correo: string
+  contrasena: string
+}
+
+export interface LoginResponse {
+  token: string
+  expiraEn: string
+  usuario: Usuario
+}
+
+export interface Usuario {
+  id: number
+  rolId?: number
+  correo: string
+  nombre: string
+  nombreCompleto?: string
+  rol: string | Rol
+  activo?: boolean
+  fechaCreacion?: string
+}
+
+export interface Rol {
+  id: number
+  nombre: string // Admin, Recepcionista, Mecanico
+}
+
+// Tipos para Clientes
+export interface Cliente {
+  id: number
+  nombres?: string
+  apellidos?: string
+  documento?: string
+  nombre: string
+  apellido: string
+  correo: string
+  telefono: string
+  direccion?: string
+  fechaRegistro: string
+  activo: boolean
+}
+
+export interface ClienteCreate {
+  nombre: string
+  apellido: string
+  documento: string
+  correo?: string
+  telefono?: string
+  direccion?: string
+}
+
+export interface ClienteUpdate extends ClienteCreate {
+  activo?: boolean
+}
+
+// Tipos para Vehículos
+export interface Vehiculo {
+  id: number
+  placa: string
+  vin?: string
+  color?: string
+  anio: number
+  kilometraje: number
+  clienteId: number
+  cliente?: Cliente
+  marcaId: number
+  marca?: Marca
+  modeloId: number
+  modelo?: Modelo
+  fechaRegistro: string
+  activo?: boolean
+}
+
+export interface VehiculoCreate {
+  placa: string
+  vin?: string
+  color?: string
+  anio: number
+  kilometraje: number
+  clienteId: number
+  marcaId: number
+  modeloId: number
+}
+
+export interface VehiculoUpdate extends VehiculoCreate {}
+
+export interface Marca {
+  id: number
+  nombre: string
+}
+
+export interface Modelo {
+  id: number
+  nombre: string
+  marcaId: number
+  anioDesde?: number
+  anioHasta?: number
+}
+
+// Tipos para Citas
+export interface Cita {
+  id: number
+  fechaHora: string
+  motivo: string
+  notas?: string
+  vehiculoId: number
+  vehiculo?: Vehiculo
+  estado: string
+  fechaCreacion: string
+}
+
+export interface CitaCreate {
+  fechaHora: string
+  motivo: string
+  notas?: string
+  vehiculoId: number
+}
+
+// Tipos para Órdenes de Servicio
+export interface OrdenServicio {
+  id: number
+  fechaIngreso: string
+  fechaEstimada?: string
+  fechaEstimadaEntrega?: string
+  fechaEntregaReal?: string
+  fechaEntrega?: string
+  observaciones?: string
+  descripcionProblema: string
+  diagnostico?: string
+  kilometrajeIngreso: number
+  vehiculoId: number
+  vehiculo?: Vehiculo
+  estadoId: number
+  estado?: EstadoOrden
+  citaId?: number
+  detalles?: DetalleOrden[]
+  mecanicos?: OrdenMecanico[]
+  tiposServicio?: OrdenTipoServicio[]
+}
+
+export interface OrdenServicioCreate {
+  fechaIngreso: string
+  fechaEstimada?: string
+  fechaEstimadaEntrega?: string
+  observaciones?: string
+  descripcionProblema: string
+  kilometrajeIngreso: number
+  vehiculoId: number
+  recepcionistaId?: number
+  estadoId?: number
+  citaId?: number
+}
+
+export interface OrdenServicioUpdate {
+  fechaEstimadaEntrega?: string
+  diagnostico?: string
+  estadoId?: number
+}
+
+export interface EstadoOrden {
+  id: number
+  nombre: string // Pendiente, En proceso, Completada, Cancelada
+}
+
+export interface OrdenMecanico {
+  id: number
+  ordenId: number
+  mecanicoId: number
+  mecanico?: Usuario
+  fechaAsignacion: string
+}
+
+export interface OrdenTipoServicio {
+  id: number
+  ordenId: number
+  tipoServicioId: number
+  tipoServicio?: TipoServicio
+}
+
+export interface TipoServicio {
+  id: number
+  nombre: string // Diagnóstico, Mantenimiento preventivo, Reparación
+  descripcion?: string
+}
+
+export interface DetalleOrden {
+  id: number
+  ordenId: number
+  repuestoId?: number
+  repuesto?: Repuesto
+  cantidad: number
+  precioUnitario: number
+  descripcion?: string
+  esManoObra: boolean
+}
+
+export interface DetalleOrdenCreate {
+  ordenId: number
+  repuestoId?: number
+  cantidad: number
+  precioUnitario: number
+  descripcion?: string
+  esManoObra: boolean
+}
+
+// Tipos para Repuestos/Inventario
+export interface Repuesto {
+  id: number
+  codigo: string
+  nombre: string
+  descripcion?: string
+  precioVenta: number
+  precioCosto: number
+  stockActual: number
+  stockMinimo: number
+  categoriaId: number
+  categoria?: CategoriaRepuesto
+  unidadMedidaId: number
+  unidadMedida?: UnidadMedida
+  ubicacionId?: number
+  ubicacion?: Ubicacion
+  activo: boolean
+}
+
+export interface RepuestoCreate {
+  codigo: string
+  nombre: string
+  descripcion?: string
+  precioVenta: number
+  precioCosto: number
+  stockActual: number
+  stockMinimo: number
+  categoriaId: number
+  unidadMedidaId: number
+  ubicacionId?: number
+}
+
+export interface RepuestoUpdate extends RepuestoCreate {
+  activo?: boolean
+}
+
+export interface CategoriaRepuesto {
+  id: number
+  nombre: string // Encendido, Frenos, Filtros
+}
+
+export interface UnidadMedida {
+  id: number
+  nombre: string // Unidad, Litro
+}
+
+export interface Ubicacion {
+  id: number
+  nombre: string
+  descripcion?: string
+}
+
+// Tipos para Facturación
+export interface Factura {
+  id: number
+  numero: string
+  fechaEmision: string
+  subtotal: number
+  impuesto: number
+  total: number
+  ordenId: number
+  orden?: OrdenServicio
+  estadoId: number
+  estado?: EstadoFactura
+  pagos?: Pago[]
+}
+
+export interface FacturaCreate {
+  ordenId: number
+}
+
+export interface EstadoFactura {
+  id: number
+  nombre: string // Emitida, Pagada, Anulada
+}
+
+export interface Pago {
+  id: number
+  monto: number
+  fechaPago: string
+  referencia?: string
+  facturaId: number
+  metodoPagoId: number
+  metodoPago?: MetodoPago
+  confirmado: boolean
+}
+
+export interface PagoCreate {
+  monto: number
+  referencia?: string
+  facturaId: number
+  metodoPagoId: number
+}
+
+export interface MetodoPago {
+  id: number
+  nombre: string // Efectivo, Tarjeta, Transferencia
+}
+
+// Tipos para tareas de mecánicos
+export interface TareaMecanico {
+  id: number
+  descripcion: string
+  completada: boolean
+  fechaCreacion: string
+  fechaCompletado?: string
+  ordenMecanicoId: number
+}
+
+export interface TareaMecanicoCreate {
+  descripcion: string
+  ordenMecanicoId: number
+}
+
+// Tipos para parámetros de búsqueda/filtrado
+export interface PaginationParams {
+  pageNumber?: number
+  pageSize?: number
+  search?: string
+}
+
+export interface ClienteFilterParams extends PaginationParams {}
+
+export interface VehiculoFilterParams extends PaginationParams {
+  clienteId?: number
+}
+
+export interface OrdenFilterParams extends PaginationParams {
+  estadoId?: number
+  vehiculoId?: number
+  mecanicoId?: number
+}
+
+export interface RepuestoFilterParams extends PaginationParams {
+  categoriaId?: number
+  soloBajoStock?: boolean
+}
