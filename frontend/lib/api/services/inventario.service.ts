@@ -7,7 +7,13 @@ import type {
   PaginatedResponse,
   CategoriaRepuesto,
   UnidadMedida,
-  Ubicacion
+  Ubicacion,
+  Proveedor,
+  ProveedorCreate,
+  Compra,
+  CompraCreate,
+  DetalleCompra,
+  DetalleCompraCreate
 } from "../types"
 
 type RepuestoDto = {
@@ -124,6 +130,38 @@ export const inventarioService = {
    */
   async getUbicaciones(): Promise<Ubicacion[]> {
     const response = await apiClient.get<Ubicacion[]>("/Ubicacion")
+    return response.data
+  },
+
+  async getProveedores(): Promise<Proveedor[]> {
+    const response = await apiClient.get<Proveedor[]>("/Proveedor")
+    return response.data
+  },
+
+  async createProveedor(data: ProveedorCreate): Promise<Proveedor> {
+    const response = await apiClient.post<Proveedor>("/Proveedor", data)
+    return response.data
+  },
+
+  async getCompras(): Promise<Compra[]> {
+    const response = await apiClient.get<Compra[]>("/Compra")
+    return response.data
+  },
+
+  async createCompra(data: CompraCreate): Promise<Compra> {
+    const response = await apiClient.post<Compra>("/Compra", data)
+    return response.data
+  },
+
+  async getDetallesCompra(compraId?: number): Promise<DetalleCompra[]> {
+    const response = await apiClient.get<DetalleCompra[]>("/DetalleCompra", {
+      params: compraId ? { compraId } : undefined,
+    })
+    return response.data
+  },
+
+  async createDetalleCompra(data: DetalleCompraCreate): Promise<DetalleCompra> {
+    const response = await apiClient.post<DetalleCompra>("/DetalleCompra", data)
     return response.data
   },
 }

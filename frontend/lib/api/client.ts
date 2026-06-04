@@ -33,8 +33,8 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Token expirado o inválido
-      Cookies.remove("auth_token")
-      Cookies.remove("user")
+      Cookies.remove("auth_token", { path: "/" })
+      Cookies.remove("user", { path: "/" })
       if (typeof window !== "undefined") {
         window.location.href = "/login"
       }

@@ -58,6 +58,10 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof AxiosError) {
     const data = error.response?.data
 
+    if (error.response?.status === 403) {
+      return "No tienes permiso para realizar esta accion. Cierra sesion e inicia sesion de nuevo con el rol correcto."
+    }
+
     if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
       return data.message
     }
@@ -126,8 +130,12 @@ export const ordenService = {
    * Crear una nueva orden de servicio
    */
   async create(data: OrdenServicioCreate): Promise<OrdenServicio> {
-    const response = await apiClient.post<OrdenServicioDto>("/OrdenServicio", mapOrdenCreatePayload(data))
-    return mapOrden(response.data)
+    try {
+      const response = await apiClient.post<OrdenServicioDto>("/OrdenServicio", mapOrdenCreatePayload(data))
+      return mapOrden(response.data)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo crear la orden."))
+    }
   },
 
   /**
@@ -187,6 +195,11 @@ export const ordenService = {
   },
 
   // Detalles de orden
+  async getDetallesByOrden(ordenId: number): Promise<DetalleOrden[]> {
+    const response = await apiClient.get<DetalleOrden[]>("/DetalleOrden", { params: { ordenId } })
+    return response.data
+  },
+
   async addDetalle(data: DetalleOrdenCreate): Promise<DetalleOrden> {
     const response = await apiClient.post<DetalleOrden>("/DetalleOrden", data)
     return response.data
@@ -198,12 +211,16 @@ export const ordenService = {
 
   // Asignación de mecánicos
   async asignarMecanico(ordenId: number, mecanicoId: number): Promise<OrdenMecanico> {
-    const response = await apiClient.post<OrdenMecanico>("/OrdenMecanico", {
-      ordenId,
-      mecanicoId,
-      fechaAsignacion: new Date().toISOString().split("T")[0],
-    })
-    return response.data
+    try {
+      const response = await apiClient.post<OrdenMecanico>("/OrdenMecanico", {
+        ordenId,
+        mecanicoId,
+        fechaAsignacion: new Date().toISOString().split("T")[0],
+      })
+      return response.data
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo asignar el mecanico."))
+    }
   },
 
   async removerMecanico(id: number): Promise<void> {
@@ -211,6 +228,11 @@ export const ordenService = {
   },
 
   // Tareas de mecánico
+  async getTareasByOrden(ordenId: number): Promise<TareaMecanico[]> {
+    const response = await apiClient.get<TareaMecanico[]>("/TareaMecanico", { params: { ordenId } })
+    return response.data
+  },
+
   async addTarea(data: TareaMecanicoCreate): Promise<TareaMecanico> {
     const response = await apiClient.post<TareaMecanico>("/TareaMecanico", data)
     return response.data

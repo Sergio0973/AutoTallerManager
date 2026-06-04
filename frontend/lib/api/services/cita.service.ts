@@ -1,4 +1,5 @@
 import apiClient, { getTotalCount } from "../client"
+import { AxiosError } from "axios"
 import type { 
   Cita, 
   CitaCreate, 
@@ -45,6 +46,41 @@ const mapCitaPayload = (data: CitaCreate | Partial<CitaCreate>) => ({
   observaciones: data.observaciones ?? data.notas ?? data.motivo,
 })
 
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data
+
+    if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
+      if ("errors" in data && Array.isArray(data.errors) && data.errors.length > 0) {
+        const details = data.errors
+          .map((item: unknown) => {
+            if (item && typeof item === "object" && "errorMessage" in item) {
+              return String(item.errorMessage)
+            }
+
+            return ""
+          })
+          .filter(Boolean)
+          .join(" ")
+
+        return details ? `${data.message} ${details}` : data.message
+      }
+
+      return data.message
+    }
+
+    if (typeof data === "string" && data.trim()) {
+      return data
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallback
+}
+
 export const citaService = {
   /**
    * Obtener lista paginada de citas
@@ -71,16 +107,24 @@ export const citaService = {
    * Crear una nueva cita
    */
   async create(data: CitaCreate): Promise<Cita> {
-    const response = await apiClient.post<CitaDto>("/Cita", mapCitaPayload(data))
-    return mapCita(response.data)
+    try {
+      const response = await apiClient.post<CitaDto>("/Cita", mapCitaPayload(data))
+      return mapCita(response.data)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo crear la cita."))
+    }
   },
 
   /**
    * Actualizar una cita
    */
   async update(id: number, data: Partial<CitaCreate>): Promise<Cita> {
-    await apiClient.put(`/Cita/${id}`, mapCitaPayload(data))
-    return this.getById(id)
+    try {
+      await apiClient.put(`/Cita/${id}`, mapCitaPayload(data))
+      return this.getById(id)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo actualizar la cita."))
+    }
   },
 
   /**
@@ -95,7 +139,11 @@ export const citaService = {
    * Eliminar una cita
    */
   async delete(id: number): Promise<void> {
-    await apiClient.delete(`/Cita/${id}`)
+    try {
+      await apiClient.delete(`/Cita/${id}`)
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo eliminar la cita."))
+    }
   },
 
   /**

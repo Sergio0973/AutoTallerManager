@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.Repuestos.Controllers;
 
-[Authorize(Policy = "Admin")]
+[Authorize]
 [EnableRateLimiting("repuestos-limit")]
 public sealed class RepuestoController : BaseApiController
 {
@@ -23,6 +23,7 @@ public sealed class RepuestoController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "Mecanico")]
     [ProducesResponseType(typeof(IReadOnlyList<RepuestoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -50,6 +51,7 @@ public sealed class RepuestoController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Mecanico")]
     [ProducesResponseType(typeof(RepuestoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -62,6 +64,7 @@ public sealed class RepuestoController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     [ProducesResponseType(typeof(RepuestoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -87,6 +90,7 @@ public sealed class RepuestoController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -112,6 +116,7 @@ public sealed class RepuestoController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

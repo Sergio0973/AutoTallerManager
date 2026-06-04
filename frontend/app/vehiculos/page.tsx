@@ -223,10 +223,10 @@ export default function VehiculosPage() {
         vehiculoService.getAll({ pageNumber: 1, pageSize: 100 }),
       ])
 
-      const clientesData = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
-      const marcasData = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
-      const modelosData = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
-      const vehiculosData = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
+      const clientesData: Cliente[] = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
+      const marcasData: Marca[] = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
+      const modelosData: Modelo[] = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
+      const vehiculosData: Vehiculo[] = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
 
       setClientes(clientesData)
       setMarcas(marcasData)

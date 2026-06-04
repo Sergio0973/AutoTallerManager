@@ -58,9 +58,21 @@ import {
   FileText,
   Receipt
 } from "lucide-react"
-import { clienteService, ordenService, vehiculoService } from "@/lib/api"
+import { citaService, clienteService, inventarioService, ordenService, vehiculoService } from "@/lib/api"
 import { useAuth } from "@/contexts/auth-context"
-import type { OrdenServicio, EstadoOrden, Vehiculo, Cliente } from "@/lib/api/types"
+import type {
+  Cita,
+  OrdenServicio,
+  EstadoOrden,
+  Vehiculo,
+  Cliente,
+  Repuesto,
+  TipoServicio,
+  DetalleOrden,
+  TareaMecanico,
+  Marca,
+  Modelo,
+} from "@/lib/api/types"
 
 // Mock data
 const mockEstados: EstadoOrden[] = [
@@ -144,8 +156,16 @@ const estadoConfig: Record<string, { color: string; icon: typeof Clock }> = {
   CANCELADA: { color: "bg-destructive/20 text-destructive", icon: XCircle },
 }
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(value)
+
 interface OrdenForm {
   vehiculoId: number
+  citaId?: number
   descripcionProblema: string
   diagnostico: string
   kilometrajeIngreso: number
@@ -155,9 +175,15 @@ interface OrdenForm {
 
 export default function OrdenesPage() {
   const { user, hasRole } = useAuth()
+  const canManageOrdenes = hasRole("Admin") || hasRole("Recepcionista")
   const [ordenes, setOrdenes] = useState<OrdenServicio[]>([])
   const [estados, setEstados] = useState<EstadoOrden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [citas, setCitas] = useState<Cita[]>([])
+  const [repuestos, setRepuestos] = useState<Repuesto[]>([])
+  const [tiposServicio, setTiposServicio] = useState<TipoServicio[]>([])
+  const [detallesOrden, setDetallesOrden] = useState<DetalleOrden[]>([])
+  const [tareasOrden, setTareasOrden] = useState<TareaMecanico[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterEstado, setFilterEstado] = useState<string>("all")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -166,16 +192,28 @@ export default function OrdenesPage() {
   const [selectedOrden, setSelectedOrden] = useState<OrdenServicio | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [operationMessage, setOperationMessage] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
   const [formData, setFormData] = useState<OrdenForm>({
     vehiculoId: 0,
+    citaId: undefined,
     descripcionProblema: "",
     diagnostico: "",
     kilometrajeIngreso: 0,
     fechaEstimadaEntrega: "",
     estadoId: 1,
+  })
+  const [tareaForm, setTareaForm] = useState({
+    tipoServicioId: 0,
+    descripcion: "",
+    horasTrabajadas: 1,
+    costoHora: 50000,
+  })
+  const [detalleForm, setDetalleForm] = useState({
+    repuestoId: 0,
+    cantidad: 1,
   })
 
   const enrichOrden = (
@@ -213,26 +251,33 @@ export default function OrdenesPage() {
   const estadosDisponiblesParaEdicion = estados.filter(
     (estado) => hasRole("Admin") || !isEstadoTerminalNombre(estado.nombre)
   )
+  const canWorkOrdenes = hasRole("Admin") || hasRole("Mecanico")
 
   const loadOrdenes = async () => {
     setIsLoading(true)
     try {
-      const [clientesResponse, marcasResponse, modelosResponse, vehiculosResponse, estadosResponse, ordenesResponse] =
+      const [clientesResponse, marcasResponse, modelosResponse, vehiculosResponse, estadosResponse, citasResponse, tiposResponse, repuestosResponse, ordenesResponse] =
         await Promise.allSettled([
           clienteService.getAll({ pageNumber: 1, pageSize: 100 }),
           vehiculoService.getMarcas(),
           vehiculoService.getModelos(),
           vehiculoService.getAll({ pageNumber: 1, pageSize: 100 }),
           ordenService.getEstados(),
+          citaService.getAll({ pageNumber: 1, pageSize: 100 }),
+          ordenService.getTiposServicio(),
+          inventarioService.getAll({ pageNumber: 1, pageSize: 100 }),
           ordenService.getAll({ pageNumber: 1, pageSize: 100 }),
         ])
 
-      const clientesData = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
-      const marcasData = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
-      const modelosData = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
-      const vehiculosBase = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
-      const estadosData = estadosResponse.status === "fulfilled" ? estadosResponse.value : []
-      const ordenesData = ordenesResponse.status === "fulfilled" ? ordenesResponse.value.data : []
+      const clientesData: Cliente[] = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
+      const marcasData: Marca[] = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
+      const modelosData: Modelo[] = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
+      const vehiculosBase: Vehiculo[] = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
+      const estadosData: EstadoOrden[] = estadosResponse.status === "fulfilled" ? estadosResponse.value : []
+      const citasData: Cita[] = citasResponse.status === "fulfilled" ? citasResponse.value.data : []
+      const tiposData: TipoServicio[] = tiposResponse.status === "fulfilled" ? tiposResponse.value : []
+      const repuestosData: Repuesto[] = repuestosResponse.status === "fulfilled" ? repuestosResponse.value.data : []
+      const ordenesData: OrdenServicio[] = ordenesResponse.status === "fulfilled" ? ordenesResponse.value.data : []
 
       const vehiculosData = vehiculosBase.map((vehiculo) => {
         const modelo = modelosData.find((item) => item.id === vehiculo.modeloId)
@@ -249,6 +294,9 @@ export default function OrdenesPage() {
 
       setVehiculos(vehiculosData)
       setEstados(estadosData)
+      setCitas(citasData)
+      setTiposServicio(tiposData)
+      setRepuestos(repuestosData)
       setOrdenes(
         ordenesData.map((orden) =>
           enrichOrden(orden, vehiculosData, estadosData)
@@ -299,10 +347,20 @@ export default function OrdenesPage() {
     }).length,
   }
 
+  const citasDisponibles = citas.filter((cita) => {
+    const citaUsada = ordenes.some((orden) => orden.citaId === cita.id)
+    return (
+      cita.vehiculoId === formData.vehiculoId &&
+      !citaUsada &&
+      (cita.estado || "").toLowerCase().includes("program")
+    )
+  })
+
   const handleCreate = () => {
     setErrorMessage("")
     setFormData({
       vehiculoId: 0,
+      citaId: undefined,
       descripcionProblema: "",
       diagnostico: "",
       kilometrajeIngreso: 0,
@@ -313,8 +371,31 @@ export default function OrdenesPage() {
   }
 
   const handleView = (orden: OrdenServicio) => {
+    setOperationMessage("")
+    setErrorMessage("")
     setSelectedOrden(orden)
+    loadOrdenOperationalData(orden.id)
+    setTareaForm({
+      tipoServicioId: tiposServicio[0]?.id || 0,
+      descripcion: "",
+      horasTrabajadas: 1,
+      costoHora: 50000,
+    })
+    setDetalleForm({
+      repuestoId: repuestos[0]?.id || 0,
+      cantidad: 1,
+    })
     setIsViewOpen(true)
+  }
+
+  const loadOrdenOperationalData = async (ordenId: number) => {
+    const [detallesResponse, tareasResponse] = await Promise.allSettled([
+      ordenService.getDetallesByOrden(ordenId),
+      ordenService.getTareasByOrden(ordenId),
+    ])
+
+    setDetallesOrden(detallesResponse.status === "fulfilled" ? detallesResponse.value : [])
+    setTareasOrden(tareasResponse.status === "fulfilled" ? tareasResponse.value : [])
   }
 
   const handleEdit = (orden: OrdenServicio) => {
@@ -322,6 +403,7 @@ export default function OrdenesPage() {
     setSelectedOrden(orden)
     setFormData({
       vehiculoId: orden.vehiculoId,
+      citaId: orden.citaId,
       descripcionProblema: orden.descripcionProblema,
       diagnostico: orden.diagnostico || "",
       kilometrajeIngreso: orden.kilometrajeIngreso,
@@ -340,7 +422,7 @@ export default function OrdenesPage() {
         vehiculoId: formData.vehiculoId,
         recepcionistaId: user?.id,
         estadoId: estadoInicial?.id || 1,
-        citaId: undefined,
+        citaId: formData.citaId,
         kilometrajeIngreso: formData.kilometrajeIngreso,
         fechaIngreso: new Date().toISOString().split("T")[0],
         fechaEstimada: formData.fechaEstimadaEntrega,
@@ -380,6 +462,73 @@ export default function OrdenesPage() {
       setIsEditOpen(false)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudo actualizar la orden.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddTarea = async () => {
+    if (!selectedOrden || !user?.id) return
+    setIsLoading(true)
+    setErrorMessage("")
+    setOperationMessage("")
+    try {
+      await ordenService.addTarea({
+        ordenId: selectedOrden.id,
+        mecanicoId: user.id,
+        tipoServicioId: tareaForm.tipoServicioId,
+        descripcion: tareaForm.descripcion,
+        horasTrabajadas: tareaForm.horasTrabajadas,
+        costoHora: tareaForm.costoHora,
+        estado: "Completada",
+        fechaInicio: new Date().toISOString(),
+        fechaFin: new Date().toISOString(),
+      })
+      setOperationMessage("Trabajo registrado correctamente.")
+      setTareaForm({ ...tareaForm, descripcion: "" })
+      await loadOrdenOperationalData(selectedOrden.id)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo registrar el trabajo.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddDetalle = async () => {
+    if (!selectedOrden || !user?.id) return
+    const repuesto = repuestos.find((item) => item.id === detalleForm.repuestoId)
+    setIsLoading(true)
+    setErrorMessage("")
+    setOperationMessage("")
+    try {
+      await ordenService.addDetalle({
+        ordenId: selectedOrden.id,
+        repuestoId: detalleForm.repuestoId,
+        usuarioId: user.id,
+        cantidad: detalleForm.cantidad,
+        precioSnapshot: repuesto?.precioUnitario || repuesto?.precioVenta || 0,
+      })
+      setOperationMessage("Repuesto agregado y stock descontado correctamente.")
+      await loadOrdenOperationalData(selectedOrden.id)
+      const updatedRepuestos = await inventarioService.getAll({ pageNumber: 1, pageSize: 100 })
+      setRepuestos(updatedRepuestos.data)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo agregar el repuesto.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAsignarMecanicoActual = async () => {
+    if (!selectedOrden || !user?.id) return
+    setIsLoading(true)
+    setErrorMessage("")
+    setOperationMessage("")
+    try {
+      await ordenService.asignarMecanico(selectedOrden.id, user.id)
+      setOperationMessage("Mecanico asignado a la orden correctamente.")
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo asignar el mecanico.")
     } finally {
       setIsLoading(false)
     }
@@ -489,10 +638,12 @@ export default function OrdenesPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleCreate} className="bg-primary text-primary-foreground">
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Orden
-          </Button>
+          {canManageOrdenes && (
+            <Button onClick={handleCreate} className="bg-primary text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Orden
+            </Button>
+          )}
         </div>
 
         {/* Table */}
@@ -573,7 +724,7 @@ export default function OrdenesPage() {
                                 <Eye className="w-4 h-4 mr-2" />
                                 Ver detalles
                               </DropdownMenuItem>
-                              {!isEstadoTerminal(orden) && (
+                              {canManageOrdenes && !isEstadoTerminal(orden) && (
                                 <DropdownMenuItem onClick={() => handleEdit(orden)}>
                                   <Pencil className="w-4 h-4 mr-2" />
                                   Editar
@@ -649,6 +800,7 @@ export default function OrdenesPage() {
                   setFormData({
                     ...formData,
                     vehiculoId: parseInt(value),
+                    citaId: undefined,
                     kilometrajeIngreso: vehiculo?.kilometraje || 0,
                   })
                 }}
@@ -664,6 +816,38 @@ export default function OrdenesPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cita vinculada</label>
+              <Select
+                value={formData.citaId?.toString() || "none"}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    citaId: value === "none" ? undefined : parseInt(value),
+                  })
+                }
+                disabled={!formData.vehiculoId || citasDisponibles.length === 0}
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Seleccionar cita programada" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin cita vinculada</SelectItem>
+                  {citasDisponibles.map((cita) => (
+                    <SelectItem key={cita.id} value={cita.id.toString()}>
+                      {cita.fechaCita} {cita.horaInicio} - {cita.horaFin}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {formData.vehiculoId
+                  ? citasDisponibles.length > 0
+                    ? "Opcional: vincula la orden con una cita programada del vehiculo."
+                    : "No hay citas programadas disponibles para este vehiculo."
+                  : "Selecciona primero un vehiculo."}
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Descripción del problema</label>
@@ -790,20 +974,20 @@ export default function OrdenesPage() {
 
       {/* View Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="bg-card border-border w-[calc(100vw-1rem)] sm:w-[96vw] max-w-6xl max-h-[94vh] overflow-hidden flex flex-col p-4 sm:p-6">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-primary" />
               Orden ORD-{selectedOrden?.id.toString().padStart(3, "0")}
             </DialogTitle>
           </DialogHeader>
           {selectedOrden && (
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs defaultValue="general" className="w-full min-h-0 flex-1 overflow-hidden flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 shrink-0">
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="detalles">Detalles</TabsTrigger>
               </TabsList>
-              <TabsContent value="general" className="space-y-4 pt-4">
+              <TabsContent value="general" className="space-y-4 pt-4 overflow-y-auto overflow-x-hidden pr-1">
                 <div className="flex items-center justify-between">
                   <Badge className={getEstadoConfig(getEstadoNombre(selectedOrden)).color}>
                     {getEstadoNombre(selectedOrden)}
@@ -813,7 +997,7 @@ export default function OrdenesPage() {
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-secondary/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-secondary/50">
                   <div className="flex items-center gap-3">
                     <Car className="w-5 h-5 text-primary" />
                     <div>
@@ -857,7 +1041,7 @@ export default function OrdenesPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
                   <div>
                     <p className="text-sm text-muted-foreground">Km de ingreso</p>
                     <p className="font-semibold">{selectedOrden.kilometrajeIngreso.toLocaleString()} km</p>
@@ -872,15 +1056,235 @@ export default function OrdenesPage() {
                   </div>
                 </div>
               </TabsContent>
-              <TabsContent value="detalles" className="space-y-4 pt-4">
-                <div className="text-center py-8 text-muted-foreground">
+              <TabsContent value="detalles" className="space-y-4 pt-4 overflow-y-auto overflow-x-hidden pr-1">
+                {errorMessage && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{errorMessage}</AlertDescription>
+                  </Alert>
+                )}
+                {operationMessage && (
+                  <Alert>
+                    <AlertDescription>{operationMessage}</AlertDescription>
+                  </Alert>
+                )}
+
+                {canWorkOrdenes && (
+                  <div className="space-y-5">
+                    <div className="flex justify-end">
+                      <Button variant="outline" onClick={handleAsignarMecanicoActual} disabled={isLoading}>
+                        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        <User className="w-4 h-4 mr-2" />
+                        Asignarme como mecanico
+                      </Button>
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4 space-y-4">
+                      <div>
+                        <p className="font-medium">Registrar trabajo realizado</p>
+                        <p className="text-sm text-muted-foreground">
+                          Crea la tarea mecanica y calcula la mano de obra.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Tipo de servicio</label>
+                          <Select
+                            value={tareaForm.tipoServicioId.toString()}
+                            onValueChange={(value) =>
+                              setTareaForm({ ...tareaForm, tipoServicioId: parseInt(value) })
+                            }
+                          >
+                            <SelectTrigger className="bg-secondary border-border">
+                              <SelectValue placeholder="Seleccionar tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tiposServicio.map((tipo) => (
+                                <SelectItem key={tipo.id} value={tipo.id.toString()}>
+                                  {tipo.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Horas</label>
+                            <Input
+                              type="number"
+                              min={0.5}
+                              step={0.5}
+                              value={tareaForm.horasTrabajadas}
+                              onChange={(event) =>
+                                setTareaForm({
+                                  ...tareaForm,
+                                  horasTrabajadas: Number(event.target.value) || 0,
+                                })
+                              }
+                              className="bg-secondary border-border"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Costo hora</label>
+                            <Input
+                              inputMode="numeric"
+                              value={tareaForm.costoHora}
+                              onChange={(event) =>
+                                setTareaForm({
+                                  ...tareaForm,
+                                  costoHora: Number(event.target.value.replace(/\D/g, "")) || 0,
+                                })
+                              }
+                              className="bg-secondary border-border"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Descripcion</label>
+                        <Textarea
+                          value={tareaForm.descripcion}
+                          onChange={(event) =>
+                            setTareaForm({ ...tareaForm, descripcion: event.target.value })
+                          }
+                          placeholder="Trabajo realizado por el mecanico..."
+                          className="bg-secondary border-border min-h-[90px]"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Total mano de obra: {formatCurrency(tareaForm.horasTrabajadas * tareaForm.costoHora)}
+                        </span>
+                        <Button
+                          onClick={handleAddTarea}
+                          disabled={isLoading || !tareaForm.tipoServicioId || !tareaForm.descripcion}
+                          className="bg-primary text-primary-foreground"
+                        >
+                          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Registrar trabajo
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4 space-y-4">
+                      <div>
+                        <p className="font-medium">Agregar repuesto usado</p>
+                        <p className="text-sm text-muted-foreground">
+                          Registra el detalle de orden y descuenta inventario.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_140px_auto] gap-3 items-end">
+                        <div className="space-y-2 min-w-0">
+                          <label className="text-sm font-medium">Repuesto</label>
+                          <Select
+                            value={detalleForm.repuestoId.toString()}
+                            onValueChange={(value) =>
+                              setDetalleForm({ ...detalleForm, repuestoId: parseInt(value) })
+                            }
+                          >
+                            <SelectTrigger className="bg-secondary border-border w-full min-w-0">
+                              <SelectValue placeholder="Seleccionar repuesto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {repuestos.map((repuesto) => (
+                                <SelectItem key={repuesto.id} value={repuesto.id.toString()}>
+                                  {repuesto.codigo} - {repuesto.descripcion} ({repuesto.stockActual} disp.)
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Cantidad</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={detalleForm.cantidad}
+                            onChange={(event) =>
+                              setDetalleForm({
+                                ...detalleForm,
+                                cantidad: Number(event.target.value) || 1,
+                              })
+                            }
+                            className="bg-secondary border-border"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleAddDetalle}
+                          disabled={isLoading || !detalleForm.repuestoId || detalleForm.cantidad <= 0}
+                          className="bg-primary text-primary-foreground w-full lg:w-auto"
+                        >
+                          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Agregar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="rounded-lg border border-border p-4 min-w-0">
+                    <p className="font-medium mb-3">Trabajos registrados</p>
+                    {tareasOrden.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sin trabajos registrados.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {tareasOrden.map((tarea) => (
+                          <div key={tarea.id} className="rounded-md bg-secondary/50 p-4 min-w-0">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs text-muted-foreground">
+                                  Trabajo #{tarea.id}
+                                </span>
+                                <Badge className="bg-success/20 text-success w-fit shrink-0">
+                                  {tarea.estado}
+                                </Badge>
+                              </div>
+                              <p className="font-medium leading-relaxed whitespace-normal min-w-0">
+                                {tarea.descripcion}
+                              </p>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {tarea.horasTrabajadas} h x {formatCurrency(tarea.costoHora)}
+                            </p>
+                            <p className="text-sm font-semibold">{formatCurrency(tarea.costoTotal)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border border-border p-4 min-w-0">
+                    <p className="font-medium mb-3">Repuestos usados</p>
+                    {detallesOrden.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sin repuestos registrados.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {detallesOrden.map((detalle) => {
+                          const repuesto = repuestos.find((item) => item.id === detalle.repuestoId)
+                          return (
+                            <div key={detalle.id} className="rounded-md bg-secondary/50 p-4 min-w-0">
+                              <p className="font-medium leading-relaxed whitespace-normal">
+                                {repuesto?.codigo || `Repuesto ${detalle.repuestoId}`}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {detalle.cantidad} x {formatCurrency(detalle.precioSnapshot)}
+                              </p>
+                              <p className="text-sm font-semibold">{formatCurrency(detalle.subtotal)}</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {false && <div className="text-center py-8 text-muted-foreground">
                   <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No hay detalles de trabajo registrados aún.</p>
                   <Button variant="outline" className="mt-4">
                     <Plus className="w-4 h-4 mr-2" />
                     Agregar detalle
                   </Button>
-                </div>
+                </div>}
               </TabsContent>
             </Tabs>
           )}
@@ -888,7 +1292,7 @@ export default function OrdenesPage() {
             <Button variant="outline" onClick={() => setIsViewOpen(false)}>
               Cerrar
             </Button>
-            {selectedOrden && !isEstadoTerminal(selectedOrden) && (
+            {canManageOrdenes && selectedOrden && !isEstadoTerminal(selectedOrden) && (
               <Button
                 onClick={() => {
                   setIsViewOpen(false)

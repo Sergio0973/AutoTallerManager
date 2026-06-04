@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.EstadosFactura.Controllers;
 
-[Authorize(Policy = "Admin")]
+[Authorize]
 public sealed class EstadoFacturaController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -21,6 +21,7 @@ public sealed class EstadoFacturaController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "Mecanico")]
     public async Task<ActionResult<IReadOnlyList<EstadoFacturaDto>>> GetAll(CancellationToken cancellationToken)
     {
         var estados = await _uow.EstadosFactura.GetAllAsync(cancellationToken);
@@ -28,6 +29,7 @@ public sealed class EstadoFacturaController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Mecanico")]
     public async Task<ActionResult<EstadoFacturaDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var estado = await _uow.EstadosFactura.GetByIdAsync(id, cancellationToken);
@@ -35,6 +37,7 @@ public sealed class EstadoFacturaController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateEstadoFacturaRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateEstadoFactura(request.Nombre), cancellationToken);
@@ -43,6 +46,7 @@ public sealed class EstadoFacturaController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateEstadoFacturaRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateEstadoFactura(id, request.Nombre), cancellationToken);
@@ -50,6 +54,7 @@ public sealed class EstadoFacturaController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var estado = await _uow.EstadosFactura.GetByIdAsync(id, cancellationToken);

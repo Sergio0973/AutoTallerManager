@@ -6,6 +6,8 @@ export { ordenService } from "./services/orden.service"
 export { inventarioService } from "./services/inventario.service"
 export { facturacionService } from "./services/facturacion.service"
 export { citaService } from "./services/cita.service"
+export { auditoriaService } from "./services/auditoria.service"
+export { usuarioService } from "./services/usuario.service"
 
 // Re-export types
 export * from "./types"

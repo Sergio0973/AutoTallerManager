@@ -35,7 +35,9 @@ public sealed class OrdenMecanicoRepository : IOrdenMecanicoRepository
         var terminalIds = estados
             .Where(e =>
                 string.Equals(e.Nombre.Value, "Completada", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(e.Nombre.Value, "Cancelada", StringComparison.OrdinalIgnoreCase))
+                string.Equals(e.Nombre.Value, "Cancelada", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(e.Nombre.Value, "Lista", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(e.Nombre.Value, "Entregada", StringComparison.OrdinalIgnoreCase))
             .Select(e => e.Id)
             .ToArray();
 

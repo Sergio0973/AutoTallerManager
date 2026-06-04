@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ import {
 import { Calendar, Clock, Loader2, Plus, Search } from "lucide-react"
 import { citaService, clienteService, ordenService, vehiculoService } from "@/lib/api"
 import { useAuth } from "@/contexts/auth-context"
-import type { Cita, CitaCreate, EstadoOrden, TipoServicio, Vehiculo } from "@/lib/api/types"
+import type { Cita, CitaCreate, Cliente, EstadoOrden, Marca, Modelo, TipoServicio, Vehiculo } from "@/lib/api/types"
 
 export default function CitasPage() {
   const { user } = useAuth()
@@ -42,6 +43,7 @@ export default function CitasPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [formData, setFormData] = useState<CitaCreate>({
     vehiculoId: 0,
     recepcionistaId: user?.id,
@@ -71,12 +73,12 @@ export default function CitasPage() {
           citaService.getAll({ pageNumber: 1, pageSize: 100 }),
         ])
 
-      const clientesData = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
-      const marcasData = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
-      const modelosData = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
-      const vehiculosBase = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
-      const tiposData = tiposResponse.status === "fulfilled" ? tiposResponse.value : []
-      const citasData = citasResponse.status === "fulfilled" ? citasResponse.value.data : []
+      const clientesData: Cliente[] = clientesResponse.status === "fulfilled" ? clientesResponse.value.data : []
+      const marcasData: Marca[] = marcasResponse.status === "fulfilled" ? marcasResponse.value : []
+      const modelosData: Modelo[] = modelosResponse.status === "fulfilled" ? modelosResponse.value : []
+      const vehiculosBase: Vehiculo[] = vehiculosResponse.status === "fulfilled" ? vehiculosResponse.value.data : []
+      const tiposData: TipoServicio[] = tiposResponse.status === "fulfilled" ? tiposResponse.value : []
+      const citasData: Cita[] = citasResponse.status === "fulfilled" ? citasResponse.value.data : []
 
       const vehiculosData = vehiculosBase.map((vehiculo) => {
         const modelo = modelosData.find((item) => item.id === vehiculo.modeloId)
@@ -114,6 +116,7 @@ export default function CitasPage() {
 
   const handleCreate = async () => {
     setIsLoading(true)
+    setErrorMessage("")
     try {
       const cita = await citaService.create({
         ...formData,
@@ -121,6 +124,8 @@ export default function CitasPage() {
       })
       setCitas([enrichCita(cita), ...citas])
       setIsCreateOpen(false)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo crear la cita.")
     } finally {
       setIsLoading(false)
     }
@@ -179,7 +184,13 @@ export default function CitasPage() {
               className="pl-9 bg-secondary border-border"
             />
           </div>
-          <Button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground">
+          <Button
+            onClick={() => {
+              setErrorMessage("")
+              setIsCreateOpen(true)
+            }}
+            className="bg-primary text-primary-foreground"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nueva Cita
           </Button>
@@ -236,6 +247,11 @@ export default function CitasPage() {
           <DialogHeader>
             <DialogTitle>Nueva Cita</DialogTitle>
           </DialogHeader>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Vehiculo</label>

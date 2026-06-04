@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.OrdenesServicio.Controllers;
 
-[Authorize(Policy = "Recepcionista")]
+[Authorize]
 [EnableRateLimiting("ordenes-servicio-limit")]
 public sealed class OrdenServicioController : BaseApiController
 {
@@ -87,6 +87,7 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Recepcionista")]
     [ProducesResponseType(typeof(OrdenServicioDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -113,6 +114,7 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Recepcionista")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -139,6 +141,7 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Recepcionista")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

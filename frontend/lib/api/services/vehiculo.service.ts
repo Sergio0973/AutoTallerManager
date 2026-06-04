@@ -37,9 +37,9 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
     if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
       if ("errors" in data && Array.isArray(data.errors) && data.errors.length > 0) {
         const details = data.errors
-          .map((error) => {
-            if (error && typeof error === "object" && "errorMessage" in error) {
-              return String(error.errorMessage)
+          .map((item: unknown) => {
+            if (item && typeof item === "object" && "errorMessage" in item) {
+              return String(item.errorMessage)
             }
 
             return ""
@@ -171,6 +171,29 @@ export const vehiculoService = {
       return response.data.length > 0 ? response.data : fallbackModelos
     } catch {
       return fallbackModelos
+    }
+  },
+
+  async createMarca(nombre: string): Promise<Marca> {
+    try {
+      const response = await apiClient.post<Marca>("/MarcaVehiculo", { nombre })
+      return response.data
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo crear la marca."))
+    }
+  },
+
+  async createModelo(data: {
+    marcaId: number
+    nombre: string
+    anioDesde: number
+    anioHasta: number
+  }): Promise<Modelo> {
+    try {
+      const response = await apiClient.post<Modelo>("/ModeloVehiculo", data)
+      return response.data
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, "No se pudo crear el modelo."))
     }
   },
 }

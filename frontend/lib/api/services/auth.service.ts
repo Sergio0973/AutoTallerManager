@@ -12,11 +12,13 @@ export const authService = {
     // Guardar token y datos del usuario en cookies
     Cookies.set("auth_token", response.data.token, { 
       expires: 7, // 7 días
-      sameSite: "strict"
+      sameSite: "strict",
+      path: "/",
     })
     Cookies.set("user", JSON.stringify(response.data.usuario), {
       expires: 7,
-      sameSite: "strict"
+      sameSite: "strict",
+      path: "/",
     })
     
     return response.data
@@ -26,8 +28,8 @@ export const authService = {
    * Cerrar sesión
    */
   logout(): void {
-    Cookies.remove("auth_token")
-    Cookies.remove("user")
+    Cookies.remove("auth_token", { path: "/" })
+    Cookies.remove("user", { path: "/" })
     if (typeof window !== "undefined") {
       window.location.href = "/login"
     }
@@ -63,8 +65,8 @@ export const authService = {
 
       return JSON.parse(userStr)
     } catch {
-      Cookies.remove("auth_token")
-      Cookies.remove("user")
+      Cookies.remove("auth_token", { path: "/" })
+      Cookies.remove("user", { path: "/" })
       return null
     }
   },

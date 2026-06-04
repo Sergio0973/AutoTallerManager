@@ -2,74 +2,110 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { useAuth } from "@/contexts/auth-context"
+import { useState } from "react"
 import {
-  LayoutDashboard,
-  Users,
-  Car,
-  ClipboardList,
-  Package,
-  Receipt,
   Calendar,
-  Settings,
-  LogOut,
-  Wrench,
+  Car,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  UserCog,
+  Users,
+  Wrench,
 } from "lucide-react"
-import { useState } from "react"
+import { useAuth } from "@/contexts/auth-context"
+import { cn } from "@/lib/utils"
 
 const navigationItems = [
   {
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+    roles: ["Admin", "Recepcionista", "Mecanico"],
   },
   {
     title: "Clientes",
     href: "/clientes",
     icon: Users,
+    roles: ["Admin", "Recepcionista"],
   },
   {
-    title: "Vehículos",
+    title: "Usuarios",
+    href: "/usuarios",
+    icon: UserCog,
+    roles: ["Admin"],
+  },
+  {
+    title: "Vehiculos",
     href: "/vehiculos",
     icon: Car,
+    roles: ["Admin", "Recepcionista"],
   },
   {
     title: "Citas",
     href: "/citas",
     icon: Calendar,
+    roles: ["Admin", "Recepcionista"],
   },
   {
-    title: "Órdenes de Servicio",
+    title: "Ordenes de Servicio",
     href: "/ordenes",
     icon: ClipboardList,
+    roles: ["Admin", "Recepcionista", "Mecanico"],
   },
   {
     title: "Inventario",
     href: "/inventario",
     icon: Package,
+    roles: ["Admin"],
   },
   {
-    title: "Facturación",
+    title: "Facturacion",
     href: "/facturacion",
     icon: Receipt,
+    roles: ["Admin", "Mecanico"],
+  },
+  {
+    title: "Auditoria",
+    href: "/auditoria",
+    icon: ShieldCheck,
+    roles: ["Admin"],
   },
 ]
 
 const bottomItems = [
   {
-    title: "Configuración",
+    title: "Configuracion",
     href: "/configuracion",
     icon: Settings,
+    roles: ["Admin", "Recepcionista", "Mecanico"],
   },
 ]
+
+const getRoleName = (rol: unknown) => {
+  if (typeof rol === "string") return rol
+  if (rol && typeof rol === "object" && "nombre" in rol) {
+    return String((rol as { nombre?: string }).nombre || "")
+  }
+
+  return ""
+}
 
 export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
+  const roleName = getRoleName(user?.rol)
+  const canAccess = (roles: string[]) =>
+    roles.some((role) => role.toLowerCase() === roleName.toLowerCase())
+  const visibleNavigationItems = navigationItems.filter((item) => canAccess(item.roles))
+  const visibleBottomItems = bottomItems.filter((item) => canAccess(item.roles))
 
   return (
     <aside
@@ -78,7 +114,6 @@ export function Sidebar() {
         collapsed ? "w-16" : "w-64"
       )}
     >
-      {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
           <Wrench className="w-5 h-5 text-primary-foreground" />
@@ -93,7 +128,6 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
         <div className={cn("mb-2", !collapsed && "px-2")}>
           {!collapsed && (
@@ -102,8 +136,9 @@ export function Sidebar() {
             </span>
           )}
         </div>
-        {navigationItems.map((item) => {
+        {visibleNavigationItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`)
+
           return (
             <Link
               key={item.href}
@@ -122,10 +157,10 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom section */}
       <div className="px-2 py-4 border-t border-sidebar-border space-y-1">
-        {bottomItems.map((item) => {
+        {visibleBottomItems.map((item) => {
           const isActive = pathname === item.href
+
           return (
             <Link
               key={item.href}
@@ -147,11 +182,10 @@ export function Sidebar() {
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium w-full text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span>Cerrar Sesión</span>}
+          {!collapsed && <span>Cerrar Sesion</span>}
         </button>
       </div>
 
-      {/* Collapse button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center justify-center h-10 border-t border-sidebar-border text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"

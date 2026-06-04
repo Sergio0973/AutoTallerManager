@@ -16,7 +16,7 @@ export interface Usuario {
   correo: string
   nombre: string
   nombreCompleto?: string
-  rol: string | Rol
+  rol?: string | Rol
   activo?: boolean
   fechaCreacion?: string
 }
@@ -24,6 +24,51 @@ export interface Usuario {
 export interface Rol {
   id: number
   nombre: string // Admin, Recepcionista, Mecanico
+  descripcion?: string
+}
+
+export interface UsuarioCreate {
+  rolId: number
+  correo: string
+  nombre: string
+  contrasena: string
+}
+
+export interface UsuarioUpdate {
+  rolId: number
+  correo: string
+  nombre: string
+}
+
+export interface UsuarioPasswordReset {
+  nuevaContrasena: string
+}
+
+export interface RolCreate {
+  nombre: string
+  descripcion: string
+}
+
+export interface RolUpdate extends RolCreate {}
+
+export interface Auditoria {
+  id: number
+  usuarioId: number
+  entidad: string
+  entidadId: number
+  tipoAccion: string
+  datosAnteriores?: string | null
+  datosNuevos?: string | null
+  ipOrigen: string
+  fecha: string
+}
+
+export interface AuditoriaFilterParams {
+  usuarioId?: number
+  entidad?: string
+  tipoAccion?: string
+  desde?: string
+  hasta?: string
 }
 
 // Tipos para Clientes
@@ -206,21 +251,19 @@ export interface TipoServicio {
 export interface DetalleOrden {
   id: number
   ordenId: number
-  repuestoId?: number
+  repuestoId: number
   repuesto?: Repuesto
   cantidad: number
-  precioUnitario: number
-  descripcion?: string
-  esManoObra: boolean
+  precioSnapshot: number
+  subtotal: number
 }
 
 export interface DetalleOrdenCreate {
   ordenId: number
-  repuestoId?: number
+  repuestoId: number
+  usuarioId: number
   cantidad: number
-  precioUnitario: number
-  descripcion?: string
-  esManoObra: boolean
+  precioSnapshot: number
 }
 
 // Tipos para Repuestos/Inventario
@@ -278,6 +321,58 @@ export interface Ubicacion {
   id: number
   nombre: string
   descripcion?: string
+}
+
+export interface Proveedor {
+  id: number
+  nombre: string
+  nit: string
+  telefono: string
+  correo: string
+  ciudadId: number
+  activo: boolean
+}
+
+export interface ProveedorCreate {
+  nombre: string
+  nit: string
+  telefono: string
+  correo: string
+  ciudadId: number
+}
+
+export interface Compra {
+  id: number
+  proveedorId: number
+  usuarioId: number
+  fechaCompra: string
+  total: number
+  estado: string
+  observaciones?: string
+}
+
+export interface CompraCreate {
+  proveedorId: number
+  usuarioId: number
+  fechaCompra: string
+  estado: string
+  observaciones?: string
+}
+
+export interface DetalleCompra {
+  id: number
+  compraId: number
+  repuestoId: number
+  cantidad: number
+  precioUnitario: number
+  subtotal: number
+}
+
+export interface DetalleCompraCreate {
+  compraId: number
+  repuestoId: number
+  cantidad: number
+  precioUnitario: number
 }
 
 // Tipos para Facturación
@@ -345,16 +440,28 @@ export interface MetodoPago {
 // Tipos para tareas de mecánicos
 export interface TareaMecanico {
   id: number
+  ordenId: number
+  mecanicoId: number
+  tipoServicioId: number
   descripcion: string
-  completada: boolean
-  fechaCreacion: string
-  fechaCompletado?: string
-  ordenMecanicoId: number
+  horasTrabajadas: number
+  costoHora: number
+  costoTotal: number
+  estado: string
+  fechaInicio?: string
+  fechaFin?: string
 }
 
 export interface TareaMecanicoCreate {
+  ordenId: number
+  mecanicoId: number
+  tipoServicioId: number
   descripcion: string
-  ordenMecanicoId: number
+  horasTrabajadas: number
+  costoHora: number
+  estado: string
+  fechaInicio?: string
+  fechaFin?: string
 }
 
 // Tipos para parámetros de búsqueda/filtrado
@@ -362,6 +469,13 @@ export interface PaginationParams {
   pageNumber?: number
   pageSize?: number
   search?: string
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  totalCount: number
+  pageNumber: number
+  pageSize: number
 }
 
 export interface ClienteFilterParams extends PaginationParams {}

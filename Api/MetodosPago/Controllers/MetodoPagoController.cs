@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.MetodosPago.Controllers;
 
-[Authorize(Policy = "Admin")]
+[Authorize]
 public sealed class MetodoPagoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -21,6 +21,7 @@ public sealed class MetodoPagoController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "Mecanico")]
     public async Task<ActionResult<IReadOnlyList<MetodoPagoDto>>> GetAll(CancellationToken cancellationToken)
     {
         var metodos = await _uow.MetodosPago.GetAllAsync(cancellationToken);
@@ -28,6 +29,7 @@ public sealed class MetodoPagoController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Mecanico")]
     public async Task<ActionResult<MetodoPagoDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var metodo = await _uow.MetodosPago.GetByIdAsync(id, cancellationToken);
@@ -35,6 +37,7 @@ public sealed class MetodoPagoController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateMetodoPagoRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateMetodoPago(request.Nombre, request.Descripcion), cancellationToken);
@@ -43,6 +46,7 @@ public sealed class MetodoPagoController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateMetodoPagoRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateMetodoPago(id, request.Nombre, request.Descripcion), cancellationToken);
@@ -50,6 +54,7 @@ public sealed class MetodoPagoController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var metodo = await _uow.MetodosPago.GetByIdAsync(id, cancellationToken);
