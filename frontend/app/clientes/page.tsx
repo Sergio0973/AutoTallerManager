@@ -38,6 +38,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { 
   Search, 
   Plus, 
@@ -53,8 +60,8 @@ import {
   Users,
   Loader2
 } from "lucide-react"
-import { clienteService } from "@/lib/api"
-import type { Cliente, ClienteCreate } from "@/lib/api/types"
+import { clienteService, ubicacionService } from "@/lib/api"
+import type { Ciudad, Cliente, ClienteCreate, Departamento, Pais } from "@/lib/api/types"
 
 // Datos de ejemplo (se reemplazarán con llamadas a la API)
 const mockClientes: Cliente[] = [
@@ -119,8 +126,14 @@ export default function ClientesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingUbicaciones, setIsLoadingUbicaciones] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  const [paises, setPaises] = useState<Pais[]>([])
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([])
+  const [ciudades, setCiudades] = useState<Ciudad[]>([])
+  const [selectedPaisId, setSelectedPaisId] = useState<number | undefined>(undefined)
+  const [selectedDepartamentoId, setSelectedDepartamentoId] = useState<number | undefined>(undefined)
   const pageSize = 10
 
   // Form state
@@ -148,9 +161,41 @@ export default function ClientesPage() {
     }
   }
 
+  const loadUbicaciones = async () => {
+    setIsLoadingUbicaciones(true)
+    try {
+      const [paisesData, departamentosData, ciudadesData] = await Promise.all([
+        ubicacionService.getPaises(),
+        ubicacionService.getDepartamentos(),
+        ubicacionService.getCiudades(),
+      ])
+      setPaises(paisesData)
+      setDepartamentos(departamentosData)
+      setCiudades(ciudadesData)
+    } finally {
+      setIsLoadingUbicaciones(false)
+    }
+  }
+
   useEffect(() => {
     loadClientes()
+    loadUbicaciones()
   }, [])
+
+  const departamentosDisponibles = selectedPaisId
+    ? departamentos.filter((departamento) => departamento.paisId === selectedPaisId)
+    : departamentos
+
+  const ciudadesDisponibles = selectedDepartamentoId
+    ? ciudades.filter((ciudad) => ciudad.departamentoId === selectedDepartamentoId)
+    : []
+
+  const setLocationFromCiudad = (ciudadId?: number) => {
+    const ciudad = ciudades.find((item) => item.id === ciudadId)
+    const departamento = ciudad ? departamentos.find((item) => item.id === ciudad.departamentoId) : undefined
+    setSelectedDepartamentoId(departamento?.id)
+    setSelectedPaisId(departamento?.paisId)
+  }
 
   // Filtrar clientes por búsqueda
   const filteredClientes = clientes.filter(
@@ -180,6 +225,8 @@ export default function ClientesPage() {
       direccion: "",
       ciudadId: undefined,
     })
+    setSelectedPaisId(undefined)
+    setSelectedDepartamentoId(undefined)
     setIsCreateOpen(true)
   }
 
@@ -195,8 +242,91 @@ export default function ClientesPage() {
       direccion: cliente.direccion || "",
       ciudadId: cliente.ciudadId,
     })
+    setLocationFromCiudad(cliente.ciudadId)
     setIsEditOpen(true)
   }
+
+  const handlePaisChange = (value: string) => {
+    const paisId = Number(value)
+    setSelectedPaisId(paisId)
+    setSelectedDepartamentoId(undefined)
+    setFormData({ ...formData, ciudadId: undefined })
+  }
+
+  const handleDepartamentoChange = (value: string) => {
+    const departamentoId = Number(value)
+    setSelectedDepartamentoId(departamentoId)
+    setFormData({ ...formData, ciudadId: undefined })
+  }
+
+  const handleCiudadChange = (value: string) => {
+    setFormData({ ...formData, ciudadId: Number(value) })
+  }
+
+  const renderUbicacionFields = () => (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Pais</label>
+        <Select
+          value={selectedPaisId?.toString() || ""}
+          onValueChange={handlePaisChange}
+          disabled={isLoadingUbicaciones || paises.length === 0}
+        >
+          <SelectTrigger className="w-full bg-secondary border-border">
+            <SelectValue placeholder={isLoadingUbicaciones ? "Cargando..." : "Seleccionar pais"} />
+          </SelectTrigger>
+          <SelectContent>
+            {paises.map((pais) => (
+              <SelectItem key={pais.id} value={pais.id.toString()}>
+                {pais.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Departamento</label>
+        <Select
+          value={selectedDepartamentoId?.toString() || ""}
+          onValueChange={handleDepartamentoChange}
+          disabled={!selectedPaisId || departamentosDisponibles.length === 0}
+        >
+          <SelectTrigger className="w-full bg-secondary border-border">
+            <SelectValue placeholder="Seleccionar departamento" />
+          </SelectTrigger>
+          <SelectContent>
+            {departamentosDisponibles.map((departamento) => (
+              <SelectItem key={departamento.id} value={departamento.id.toString()}>
+                {departamento.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Ciudad</label>
+        <Select
+          value={formData.ciudadId?.toString() || ""}
+          onValueChange={handleCiudadChange}
+          disabled={!selectedDepartamentoId || ciudadesDisponibles.length === 0}
+        >
+          <SelectTrigger className="w-full bg-secondary border-border">
+            <SelectValue placeholder="Seleccionar ciudad" />
+          </SelectTrigger>
+          <SelectContent>
+            {ciudadesDisponibles.map((ciudad) => (
+              <SelectItem key={ciudad.id} value={ciudad.id.toString()}>
+                {ciudad.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <p className="text-xs text-muted-foreground md:col-span-3">
+        Solo es necesario seleccionar ubicacion si vas a guardar una direccion.
+      </p>
+    </div>
+  )
 
   const handleView = (cliente: Cliente) => {
     setSelectedCliente(cliente)
@@ -542,24 +672,7 @@ export default function ClientesPage() {
                 className="bg-secondary border-border"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ciudad ID</label>
-              <Input
-                type="number"
-                value={formData.ciudadId || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    ciudadId: e.target.value ? Number(e.target.value) : undefined,
-                  })
-                }
-                placeholder="Ej: 2"
-                className="bg-secondary border-border"
-              />
-              <p className="text-xs text-muted-foreground">
-                Solo es necesario si vas a guardar una direccion.
-              </p>
-            </div>
+            {renderUbicacionFields()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
@@ -657,24 +770,7 @@ export default function ClientesPage() {
                 className="bg-secondary border-border"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ciudad ID</label>
-              <Input
-                type="number"
-                value={formData.ciudadId || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    ciudadId: e.target.value ? Number(e.target.value) : undefined,
-                  })
-                }
-                placeholder="Ej: 2"
-                className="bg-secondary border-border"
-              />
-              <p className="text-xs text-muted-foreground">
-                Solo es necesario si vas a guardar una direccion.
-              </p>
-            </div>
+            {renderUbicacionFields()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>

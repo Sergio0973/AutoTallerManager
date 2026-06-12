@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Ciudades.Controllers;
 
-[Authorize(Policy = "Admin")]
+[Authorize]
 public sealed class CiudadController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -21,6 +21,7 @@ public sealed class CiudadController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "Recepcionista")]
     public async Task<ActionResult<IReadOnlyList<CiudadDto>>> GetAll([FromQuery] int? departamentoId, CancellationToken cancellationToken)
     {
         var ciudades = departamentoId.HasValue
@@ -31,6 +32,7 @@ public sealed class CiudadController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Recepcionista")]
     public async Task<ActionResult<CiudadDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var ciudad = await _uow.Ciudades.GetByIdAsync(id, cancellationToken);
@@ -38,6 +40,7 @@ public sealed class CiudadController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateCiudadRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateCiudad(request.DepartamentoId, request.Nombre), cancellationToken);
@@ -46,6 +49,7 @@ public sealed class CiudadController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateCiudadRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateCiudad(id, request.DepartamentoId, request.Nombre), cancellationToken);
@@ -53,6 +57,7 @@ public sealed class CiudadController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var ciudad = await _uow.Ciudades.GetByIdAsync(id, cancellationToken);

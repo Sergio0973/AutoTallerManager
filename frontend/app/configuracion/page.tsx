@@ -14,10 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Car, CheckCircle2, Loader2, Lock, Plus, Settings, Shield } from "lucide-react"
+import { Car, CheckCircle2, Loader2, Lock, MapPin, Plus, Settings, Shield } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { vehiculoService } from "@/lib/api"
-import type { Marca, Modelo } from "@/lib/api/types"
+import { ubicacionService, vehiculoService } from "@/lib/api"
+import type { Ciudad, Departamento, Marca, Modelo, Pais } from "@/lib/api/types"
 
 const getRoleName = (rol: unknown) => {
   if (typeof rol === "string") return rol
@@ -76,6 +76,16 @@ export default function ConfiguracionPage() {
   const [isLoadingCatalogos, setIsLoadingCatalogos] = useState(false)
   const [catalogoMessage, setCatalogoMessage] = useState("")
   const [catalogoError, setCatalogoError] = useState("")
+  const [paises, setPaises] = useState<Pais[]>([])
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([])
+  const [ciudades, setCiudades] = useState<Ciudad[]>([])
+  const [paisForm, setPaisForm] = useState({ nombre: "", codigo: "" })
+  const [departamentoForm, setDepartamentoForm] = useState({ paisId: 0, nombre: "" })
+  const [ciudadPaisId, setCiudadPaisId] = useState(0)
+  const [ciudadForm, setCiudadForm] = useState({ departamentoId: 0, nombre: "" })
+  const [isLoadingUbicaciones, setIsLoadingUbicaciones] = useState(false)
+  const [ubicacionMessage, setUbicacionMessage] = useState("")
+  const [ubicacionError, setUbicacionError] = useState("")
 
   const loadCatalogosVehiculo = async () => {
     if (!isAdmin) return
@@ -97,8 +107,43 @@ export default function ConfiguracionPage() {
     }
   }
 
+  const loadCatalogosUbicacion = async () => {
+    if (!isAdmin) return
+    setIsLoadingUbicaciones(true)
+    try {
+      const [paisesData, departamentosData, ciudadesData] = await Promise.all([
+        ubicacionService.getPaises(),
+        ubicacionService.getDepartamentos(),
+        ubicacionService.getCiudades(),
+      ])
+
+      setPaises(paisesData)
+      setDepartamentos(departamentosData)
+      setCiudades(ciudadesData)
+
+      setDepartamentoForm((current) => ({
+        ...current,
+        paisId: current.paisId || paisesData[0]?.id || 0,
+      }))
+
+      const nextPaisId = ciudadPaisId || paisesData[0]?.id || 0
+      const availableDepartments = departamentosData.filter((item) => item.paisId === nextPaisId)
+      setCiudadPaisId(nextPaisId)
+      setCiudadForm((current) => ({
+        ...current,
+        departamentoId:
+          current.departamentoId && availableDepartments.some((item) => item.id === current.departamentoId)
+            ? current.departamentoId
+            : availableDepartments[0]?.id || departamentosData[0]?.id || 0,
+      }))
+    } finally {
+      setIsLoadingUbicaciones(false)
+    }
+  }
+
   useEffect(() => {
     loadCatalogosVehiculo()
+    loadCatalogosUbicacion()
   }, [isAdmin])
 
   const handleCreateMarca = async () => {
@@ -132,6 +177,67 @@ export default function ConfiguracionPage() {
       setIsLoadingCatalogos(false)
     }
   }
+
+  const handleCreatePais = async () => {
+    setUbicacionError("")
+    setUbicacionMessage("")
+    setIsLoadingUbicaciones(true)
+    try {
+      const pais = await ubicacionService.createPais({
+        nombre: paisForm.nombre.trim(),
+        codigo: paisForm.codigo.trim().toUpperCase(),
+      })
+      setPaisForm({ nombre: "", codigo: "" })
+      setUbicacionMessage(`Pais ${pais.nombre} creado correctamente.`)
+      await loadCatalogosUbicacion()
+    } catch (error) {
+      setUbicacionError(error instanceof Error ? error.message : "No se pudo crear el pais.")
+    } finally {
+      setIsLoadingUbicaciones(false)
+    }
+  }
+
+  const handleCreateDepartamento = async () => {
+    setUbicacionError("")
+    setUbicacionMessage("")
+    setIsLoadingUbicaciones(true)
+    try {
+      const departamento = await ubicacionService.createDepartamento({
+        paisId: departamentoForm.paisId,
+        nombre: departamentoForm.nombre.trim(),
+      })
+      setDepartamentoForm((current) => ({ ...current, nombre: "" }))
+      setCiudadPaisId(departamento.paisId)
+      setCiudadForm((current) => ({ ...current, departamentoId: departamento.id }))
+      setUbicacionMessage(`Departamento ${departamento.nombre} creado correctamente.`)
+      await loadCatalogosUbicacion()
+    } catch (error) {
+      setUbicacionError(error instanceof Error ? error.message : "No se pudo crear el departamento.")
+    } finally {
+      setIsLoadingUbicaciones(false)
+    }
+  }
+
+  const handleCreateCiudad = async () => {
+    setUbicacionError("")
+    setUbicacionMessage("")
+    setIsLoadingUbicaciones(true)
+    try {
+      const ciudad = await ubicacionService.createCiudad({
+        departamentoId: ciudadForm.departamentoId,
+        nombre: ciudadForm.nombre.trim(),
+      })
+      setCiudadForm((current) => ({ ...current, nombre: "" }))
+      setUbicacionMessage(`Ciudad ${ciudad.nombre} creada correctamente.`)
+      await loadCatalogosUbicacion()
+    } catch (error) {
+      setUbicacionError(error instanceof Error ? error.message : "No se pudo crear la ciudad.")
+    } finally {
+      setIsLoadingUbicaciones(false)
+    }
+  }
+
+  const ciudadDepartamentos = departamentos.filter((departamento) => departamento.paisId === ciudadPaisId)
 
   return (
     <AppLayout>
@@ -209,6 +315,249 @@ export default function ConfiguracionPage() {
             </CardContent>
           </Card>
         </div>
+
+        {isAdmin && (
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                Catalogos de ubicacion
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {ubicacionError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{ubicacionError}</AlertDescription>
+                </Alert>
+              )}
+              {ubicacionMessage && (
+                <Alert>
+                  <AlertDescription>{ubicacionMessage}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                <div className="rounded-lg border border-border p-4 space-y-4">
+                  <div>
+                    <p className="font-medium">Nuevo pais</p>
+                    <p className="text-sm text-muted-foreground">
+                      Crea el pais base para departamentos y ciudades.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_110px] gap-3">
+                    <Input
+                      value={paisForm.nombre}
+                      onChange={(event) => setPaisForm({ ...paisForm, nombre: event.target.value })}
+                      placeholder="Ej: Colombia"
+                      className="bg-secondary border-border"
+                    />
+                    <Input
+                      value={paisForm.codigo}
+                      onChange={(event) =>
+                        setPaisForm({ ...paisForm, codigo: event.target.value.toUpperCase() })
+                      }
+                      placeholder="CO"
+                      maxLength={5}
+                      className="bg-secondary border-border uppercase"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleCreatePais}
+                    disabled={isLoadingUbicaciones || !paisForm.nombre.trim() || !paisForm.codigo.trim()}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    {isLoadingUbicaciones ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Crear pais
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border border-border p-4 space-y-4">
+                  <div>
+                    <p className="font-medium">Nuevo departamento</p>
+                    <p className="text-sm text-muted-foreground">
+                      Asocia el departamento a un pais existente.
+                    </p>
+                  </div>
+                  <Select
+                    value={departamentoForm.paisId.toString()}
+                    onValueChange={(value) =>
+                      setDepartamentoForm({ ...departamentoForm, paisId: parseInt(value) })
+                    }
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue placeholder="Seleccionar pais" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paises.map((pais) => (
+                        <SelectItem key={pais.id} value={pais.id.toString()}>
+                          {pais.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={departamentoForm.nombre}
+                    onChange={(event) =>
+                      setDepartamentoForm({ ...departamentoForm, nombre: event.target.value })
+                    }
+                    placeholder="Ej: Antioquia"
+                    className="bg-secondary border-border"
+                  />
+                  <Button
+                    onClick={handleCreateDepartamento}
+                    disabled={
+                      isLoadingUbicaciones || !departamentoForm.paisId || !departamentoForm.nombre.trim()
+                    }
+                    className="bg-primary text-primary-foreground"
+                  >
+                    {isLoadingUbicaciones ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Crear departamento
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border border-border p-4 space-y-4">
+                  <div>
+                    <p className="font-medium">Nueva ciudad</p>
+                    <p className="text-sm text-muted-foreground">
+                      Selecciona pais y departamento antes de crearla.
+                    </p>
+                  </div>
+                  <Select
+                    value={ciudadPaisId.toString()}
+                    onValueChange={(value) => {
+                      const nextPaisId = parseInt(value)
+                      const nextDepartments = departamentos.filter((item) => item.paisId === nextPaisId)
+                      setCiudadPaisId(nextPaisId)
+                      setCiudadForm({
+                        ...ciudadForm,
+                        departamentoId: nextDepartments[0]?.id || 0,
+                      })
+                    }}
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue placeholder="Seleccionar pais" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paises.map((pais) => (
+                        <SelectItem key={pais.id} value={pais.id.toString()}>
+                          {pais.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={ciudadForm.departamentoId.toString()}
+                    onValueChange={(value) =>
+                      setCiudadForm({ ...ciudadForm, departamentoId: parseInt(value) })
+                    }
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue placeholder="Seleccionar departamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ciudadDepartamentos.map((departamento) => (
+                        <SelectItem key={departamento.id} value={departamento.id.toString()}>
+                          {departamento.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={ciudadForm.nombre}
+                    onChange={(event) => setCiudadForm({ ...ciudadForm, nombre: event.target.value })}
+                    placeholder="Ej: Medellin"
+                    className="bg-secondary border-border"
+                  />
+                  <Button
+                    onClick={handleCreateCiudad}
+                    disabled={isLoadingUbicaciones || !ciudadForm.departamentoId || !ciudadForm.nombre.trim()}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    {isLoadingUbicaciones ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Crear ciudad
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                <div className="rounded-lg border border-border p-4 space-y-3">
+                  <p className="text-sm font-medium">Paises registrados</p>
+                  <div className="flex flex-wrap gap-2">
+                    {paises.map((pais) => (
+                      <Badge key={pais.id} variant="secondary">
+                        {pais.nombre} ({pais.codigo})
+                      </Badge>
+                    ))}
+                    {paises.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No hay paises registrados.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-2 gap-3 px-4 py-3 text-sm font-medium bg-secondary/50">
+                    <span>Pais</span>
+                    <span>Departamento</span>
+                  </div>
+                  <div className="divide-y divide-border max-h-64 overflow-auto">
+                    {departamentos.map((departamento) => {
+                      const pais = paises.find((item) => item.id === departamento.paisId)
+                      return (
+                        <div key={departamento.id} className="grid grid-cols-2 gap-3 px-4 py-3 text-sm">
+                          <span>{pais?.nombre || `Pais ${departamento.paisId}`}</span>
+                          <span>{departamento.nombre}</span>
+                        </div>
+                      )
+                    })}
+                    {departamentos.length === 0 && (
+                      <div className="px-4 py-6 text-sm text-muted-foreground text-center">
+                        No hay departamentos registrados.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-3 gap-3 px-4 py-3 text-sm font-medium bg-secondary/50">
+                    <span>Pais</span>
+                    <span>Departamento</span>
+                    <span>Ciudad</span>
+                  </div>
+                  <div className="divide-y divide-border max-h-64 overflow-auto">
+                    {ciudades.map((ciudad) => {
+                      const departamento = departamentos.find((item) => item.id === ciudad.departamentoId)
+                      const pais = paises.find((item) => item.id === departamento?.paisId)
+                      return (
+                        <div key={ciudad.id} className="grid grid-cols-3 gap-3 px-4 py-3 text-sm">
+                          <span>{pais?.nombre || "-"}</span>
+                          <span>{departamento?.nombre || `Departamento ${ciudad.departamentoId}`}</span>
+                          <span>{ciudad.nombre}</span>
+                        </div>
+                      )
+                    })}
+                    {ciudades.length === 0 && (
+                      <div className="px-4 py-6 text-sm text-muted-foreground text-center">
+                        No hay ciudades registradas.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {isAdmin && (
           <Card className="bg-card border-border">

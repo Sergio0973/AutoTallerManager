@@ -8,6 +8,7 @@ export { facturacionService } from "./services/facturacion.service"
 export { citaService } from "./services/cita.service"
 export { auditoriaService } from "./services/auditoria.service"
 export { usuarioService } from "./services/usuario.service"
+export { ubicacionService } from "./services/ubicacion.service"
 
 // Re-export types
 export * from "./types"

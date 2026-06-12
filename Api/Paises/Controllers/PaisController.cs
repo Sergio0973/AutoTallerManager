@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Paises.Controllers;
 
-[Authorize(Policy = "Admin")]
+[Authorize]
 public sealed class PaisController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -21,6 +21,7 @@ public sealed class PaisController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "Recepcionista")]
     public async Task<ActionResult<IReadOnlyList<PaisDto>>> GetAll(CancellationToken cancellationToken)
     {
         var paises = await _uow.Paises.GetAllAsync(cancellationToken);
@@ -28,6 +29,7 @@ public sealed class PaisController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Recepcionista")]
     public async Task<ActionResult<PaisDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var pais = await _uow.Paises.GetByIdAsync(id, cancellationToken);
@@ -35,6 +37,7 @@ public sealed class PaisController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreatePaisRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreatePais(request.Nombre, request.Codigo), cancellationToken);
@@ -43,6 +46,7 @@ public sealed class PaisController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdatePaisRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdatePais(id, request.Nombre, request.Codigo), cancellationToken);
@@ -50,6 +54,7 @@ public sealed class PaisController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var pais = await _uow.Paises.GetByIdAsync(id, cancellationToken);

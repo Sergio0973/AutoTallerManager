@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Departamentos.Controllers;
 
-[Authorize(Policy = "Admin")]
+[Authorize]
 public sealed class DepartamentoController : BaseApiController
 {
     private readonly IUnitOfWork _uow;
@@ -21,6 +21,7 @@ public sealed class DepartamentoController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "Recepcionista")]
     public async Task<ActionResult<IReadOnlyList<DepartamentoDto>>> GetAll([FromQuery] int? paisId, CancellationToken cancellationToken)
     {
         var departamentos = paisId.HasValue
@@ -31,6 +32,7 @@ public sealed class DepartamentoController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Recepcionista")]
     public async Task<ActionResult<DepartamentoDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var departamento = await _uow.Departamentos.GetByIdAsync(id, cancellationToken);
@@ -38,6 +40,7 @@ public sealed class DepartamentoController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateDepartamentoRequest request, CancellationToken cancellationToken)
     {
         var id = await _sender.Send(new CreateDepartamento(request.PaisId, request.Nombre), cancellationToken);
@@ -46,6 +49,7 @@ public sealed class DepartamentoController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDepartamentoRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new UpdateDepartamento(id, request.PaisId, request.Nombre), cancellationToken);
@@ -53,6 +57,7 @@ public sealed class DepartamentoController : BaseApiController
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var departamento = await _uow.Departamentos.GetByIdAsync(id, cancellationToken);

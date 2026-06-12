@@ -71,6 +71,39 @@ export interface AuditoriaFilterParams {
   hasta?: string
 }
 
+export interface Pais {
+  id: number
+  nombre: string
+  codigo: string
+}
+
+export interface PaisCreate {
+  nombre: string
+  codigo: string
+}
+
+export interface Departamento {
+  id: number
+  paisId: number
+  nombre: string
+}
+
+export interface DepartamentoCreate {
+  paisId: number
+  nombre: string
+}
+
+export interface Ciudad {
+  id: number
+  departamentoId: number
+  nombre: string
+}
+
+export interface CiudadCreate {
+  departamentoId: number
+  nombre: string
+}
+
 // Tipos para Clientes
 export interface Cliente {
   id: number
