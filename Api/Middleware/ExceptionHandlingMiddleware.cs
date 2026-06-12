@@ -1,3 +1,4 @@
+using Application.Common.Exceptions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -41,6 +42,20 @@ public sealed class ExceptionHandlingMiddleware
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+        }
+        catch (StockInsuficienteException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                message = ex.Message,
+                items = ex.Items.Select(item => new
+                {
+                    item.RepuestoId,
+                    item.Solicitado,
+                    item.Disponible
+                })
+            });
         }
         catch (InvalidOperationException ex)
         {

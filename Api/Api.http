@@ -1,6 +1,64 @@
 @Api_HostAddress = http://localhost:5258
+@JwtToken = PEGAR_TOKEN_AQUI
 
 GET {{Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Crear orden de servicio - caso exitoso
+POST {{Api_HostAddress}}/api/ordenesservicio
+Authorization: Bearer {{JwtToken}}
+Content-Type: application/json
+
+{
+  "vehiculoId": 123,
+  "recepcionistaId": 3,
+  "mecanicoId": 45,
+  "fechaIngreso": "2026-06-15T09:00:00",
+  "tipoServicio": "MANTENIMIENTO_MAYOR",
+  "kilometrajeIngreso": 85000,
+  "observaciones": "Vibracion en alta.",
+  "repuestos": [
+    { "repuestoId": 10, "cantidad": 2 },
+    { "repuestoId": 12, "cantidad": 1 }
+  ]
+}
+
+###
+
+### Crear orden de servicio - vehiculo con orden activa, espera 409
+POST {{Api_HostAddress}}/api/ordenesservicio
+Authorization: Bearer {{JwtToken}}
+Content-Type: application/json
+
+{
+  "vehiculoId": 123,
+  "recepcionistaId": 3,
+  "mecanicoId": 45,
+  "fechaIngreso": "2026-06-15T10:00:00",
+  "tipoServicio": "DIAGNOSTICO",
+  "kilometrajeIngreso": 85000,
+  "observaciones": "Intento duplicado para validar bloqueo.",
+  "repuestos": []
+}
+
+###
+
+### Crear orden de servicio - stock insuficiente, espera 409 con detalle de items
+POST {{Api_HostAddress}}/api/ordenesservicio
+Authorization: Bearer {{JwtToken}}
+Content-Type: application/json
+
+{
+  "vehiculoId": 124,
+  "recepcionistaId": 3,
+  "mecanicoId": 46,
+  "fechaIngreso": "2026-06-15T14:00:00",
+  "tipoServicio": "DIAGNOSTICO",
+  "kilometrajeIngreso": 42000,
+  "observaciones": "Validacion de stock insuficiente.",
+  "repuestos": [
+    { "repuestoId": 10, "cantidad": 9999 }
+  ]
+}

@@ -87,30 +87,56 @@ public sealed class OrdenServicioController : BaseApiController
     }
 
     [HttpPost]
+    [HttpPost("/api/ordenesservicio")]
     [Authorize(Policy = "Recepcionista")]
-    [ProducesResponseType(typeof(OrdenServicioDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(CreateOrdenServicioResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Create([FromBody] CreateOrdenServicioRequest request, CancellationToken cancellationToken)
     {
-        var id = await _sender.Send(
+        var result = await _sender.Send(
             new CreateOrdenServicio(
                 request.VehiculoId,
+                request.Vin,
                 request.RecepcionistaId,
                 request.EstadoId,
                 request.CitaId,
                 request.KilometrajeIngreso,
                 request.FechaIngreso,
                 request.FechaEstimada,
-                request.Observaciones),
+                request.TipoServicio,
+                request.TipoServicioId,
+                request.MecanicoId,
+                request.Observaciones,
+                request.Repuestos?.Select(r => new CreateOrdenServicioRepuesto(r.RepuestoId, r.Cantidad)).ToList()
+                    ?? new List<CreateOrdenServicioRepuesto>()),
             cancellationToken);
 
-        var orden = await _uow.OrdenesServicio.GetByIdAsync(id, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id }, Map(orden!));
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            new CreateOrdenServicioResponse(
+                result.Id,
+                result.VehiculoId,
+                result.RecepcionistaId,
+                result.EstadoId,
+                result.CitaId,
+                result.KilometrajeIngreso,
+                result.FechaIngreso,
+                result.FechaEstimada,
+                result.FechaEntregaReal,
+                result.Observaciones,
+                result.MecanicoId,
+                result.TipoServicioId,
+                result.EstadoInicial,
+                result.RepuestosReservados
+                    .Select(r => new RepuestoReservadoResponse(r.RepuestoId, r.Cantidad, r.PrecioSnapshot, r.Subtotal))
+                    .ToList()));
     }
 
     [HttpPut("{id:int}")]
